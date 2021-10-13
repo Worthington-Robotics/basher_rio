@@ -9,22 +9,25 @@
 #include <frc/shuffleboard/Shuffleboard.h>
 #include <hal/DriverStation.h>
 #include <networktables/NetworkTable.h>
+#include <iostream>
 
 void leftCallback(const void * leftFloat) {
+  std::cout << "left" << std::endl;
   leftMotor->Set(ControlMode::PercentOutput, ((std_msgs__msg__Float32*) leftFloat)->data);
 }
 
 void rightCallback(const void * rightFloat) {
+  std::cout << "right" << std::endl;
   rightMotor->Set(ControlMode::PercentOutput, ((std_msgs__msg__Float32*) rightFloat)->data);
 }
 
 void Robot::RobotInit() {
-  std::string hostIP = "10.41.45.84";
+  std::string hostIP = "10.41.45.231";
   std::string hostPort = "8888";
 
   helper = std::make_shared<ros::RosHelper>(hostIP, hostPort);
   leftMotor = new TalonSRX(1);
-  rightMotor = new TalonSRX(2);
+  rightMotor = new TalonSRX(0);
 
   frc::DriverStation::GetInstance().ReportWarning("Attempting connection to micro_ros agent...");
   if (helper->initAgentConnect()) {
@@ -52,9 +55,17 @@ void Robot::Autonomous() {
 }
 
 void Robot::Teleop() {
-  velocity.linear.x = frc::DriverStation::GetInstance().GetStickAxis(0, 0);
-  velocity.linear.y = frc::DriverStation::GetInstance().GetStickAxis(0, 1);
-  velocity.linear.z = frc::DriverStation::GetInstance().GetStickAxis(0, 2);
+  while (frc::DriverStation::GetInstance().IsOperatorControlEnabled()) {
+    velocity.linear.x = frc::DriverStation::GetInstance().GetStickAxis(0, 0);
+    velocity.linear.y = frc::DriverStation::GetInstance().GetStickAxis(0, 1);
+    velocity.linear.z = frc::DriverStation::GetInstance().GetStickAxis(0, 2);
+
+    rcl_ret_t ret = rcl_publish(twistPub, &velocity, NULL);
+    ros::checkRetOk(ret, "Failed to publish msg");
+
+    std::cout << "whee" << std::endl;
+    helper->spinOnce();
+  }
 }
 
 void Robot::Test() {}

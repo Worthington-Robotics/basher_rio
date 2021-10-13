@@ -25,7 +25,7 @@ std::string getErrorStr(rcl_ret_t ret)
     case RCL_RET_TOPIC_NAME_INVALID:
         return "Invalid topic name passed";
     default:
-        return "Unknown RCL error " + std::to_string((int)ret);
+        return "Unknown RCL error code: " + std::to_string((int)ret);
     }
 }
 
@@ -112,6 +112,7 @@ namespace ros
         return true;
     }
 
+    // Because pointers arent confusing enough, we have to pass the pointer by refrence.....
     bool RosHelper::registerPublisher(rcl_publisher_t *&publisher, const std::string &topicName, const rosidl_message_type_support_t *typeSupport)
     {
         publisher = new rcl_publisher_t();
@@ -129,15 +130,22 @@ namespace ros
         return true;
     }
 
+    // Because pointers arent confusing enough, we have to pass the pointer by refrence.....
     bool RosHelper::registerSubscriber(rcl_subscription_t *&subscriber, const std::string &topicName, const rosidl_message_type_support_t *typeSupport, void (*subscription_callback)(const void *msgin), void *msg)
     {
-        /*subscriber = new rcl_subscription_t();
+        subscriber = new rcl_subscription_t();
         rcl_ret_t ret = rclc_subscription_init_default(subscriber, &node, typeSupport, topicName.c_str());
         rclc_executor_add_subscription(&executor, subscriber, &msg, subscription_callback, ON_NEW_DATA);
         if(!checkRetOk(ret, "Failed to init subscriber"))
             return false;
+
+        if(!rcl_subscription_is_valid(subscriber)){
+            frc::DriverStation::GetInstance().ReportError("Created invalid subscriber");
+            return false;
+        }
+
         subscribers.push_back(subscriber);
-        return true;*/
+        return true;
     }
 
     bool RosHelper::createService(rcl_service_t *&service, const std::string &serviceName, const rosidl_service_type_support_t *typeSupport /*, callback */)

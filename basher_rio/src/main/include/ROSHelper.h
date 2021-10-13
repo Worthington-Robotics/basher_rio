@@ -72,6 +72,8 @@ namespace ros
         rclc_support_t support;
         rclc_executor_t executor;
 
+        rcl_init_options_t init_options;
+
         // lists of current topics
         std::vector<rcl_publisher_t *> publishers;
         std::vector<rcl_subscription_t *> subscribers;
