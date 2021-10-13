@@ -10,13 +10,52 @@
 #include <hal/DriverStation.h>
 #include <networktables/NetworkTable.h>
 
-void Robot::RobotInit() {}
+void leftCallback(const void * leftFloat) {
+  leftMotor->Set(ControlMode::PercentOutput, ((std_msgs__msg__Float32*) leftFloat)->data);
+}
+
+void rightCallback(const void * rightFloat) {
+  rightMotor->Set(ControlMode::PercentOutput, ((std_msgs__msg__Float32*) rightFloat)->data);
+}
+
+void Robot::RobotInit() {
+  std::string hostIP = "10.41.45.84";
+  std::string hostPort = "8888";
+
+  helper = std::make_shared<ros::RosHelper>(hostIP, hostPort);
+  leftMotor = new TalonSRX(1);
+  rightMotor = new TalonSRX(2);
+
+  frc::DriverStation::GetInstance().ReportWarning("Attempting connection to micro_ros agent...");
+  if (helper->initAgentConnect()) {
+    frc::DriverStation::GetInstance().ReportWarning("Connection established, starting ROS");
+
+    std::string leftTopic = "/left";
+    std::string rightTopic = "/right";
+    std::string twistTopic = "/drive/twist";
+
+    helper->registerSubscriber(leftSub, leftTopic, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), &leftCallback, left);
+    helper->registerSubscriber(rightSub, rightTopic, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), &rightCallback, right);
+
+    helper->registerPublisher(twistPub, twistTopic, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist));
+
+    frc::DriverStation::GetInstance().ReportWarning("Code init complete");
+    startOK = true;
+  }
+}
 
 void Robot::Disabled() {}
 
-void Robot::Autonomous() {}
+void Robot::Autonomous() {
 
-void Robot::Teleop() {}
+
+}
+
+void Robot::Teleop() {
+  velocity.linear.x = frc::DriverStation::GetInstance().GetStickAxis(0, 0);
+  velocity.linear.y = frc::DriverStation::GetInstance().GetStickAxis(0, 1);
+  velocity.linear.z = frc::DriverStation::GetInstance().GetStickAxis(0, 2);
+}
 
 void Robot::Test() {}
 
