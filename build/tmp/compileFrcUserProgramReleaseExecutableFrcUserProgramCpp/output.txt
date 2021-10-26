@@ -1,0 +1,6 @@
+See file:///C:/Users/Workstation/Documents/GitHub/basher_rio/build/tmp/compileFrcUserProgramReleaseExecutableFrcUserProgramCpp/output.txt for all output for compileFrcUserProgramReleaseExecutableFrcUserProgramCpp.
+compiling Robot.cpp successful.
+
+compiling RosNode.cpp successful.
+
+Finished compileFrcUserProgramReleaseExecutableFrcUserProgramCpp, see full log file:///C:/Users/Workstation/Documents/GitHub/basher_rio/build/tmp/compileFrcUserProgramReleaseExecutableFrcUserProgramCpp/output.txt.
