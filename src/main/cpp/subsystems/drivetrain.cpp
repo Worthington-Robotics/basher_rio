@@ -1,19 +1,20 @@
 #include "subsystems/drivetrain.h"
+#include "Constants.h"
 
 namespace robot {
 
     Drivetrain::Drivetrain(){
-        leftMaster = std::make_shared<TalonFX>(1);
-        rightMaster = std::make_shared<TalonFX>(2);
+        leftMaster = std::make_shared<TalonFX>(DRIVE_LEFT_MASTER);
+        rightMaster = std::make_shared<TalonFX>(DRIVE_RIGHT_MASTER);
 
-        leftFollower = std::make_shared<TalonFX>(3);
-        rightFollower = std::make_shared<TalonFX>(4);
+        leftFollower = std::make_shared<TalonFX>(DRIVE_LEFT_FOLLOWER);
+        rightFollower = std::make_shared<TalonFX>(DRIVE_RIGHT_FOLLOWER);
 
         // enable follower mode
         rightFollower->Follow(*rightMaster);
         leftFollower->Follow(*leftMaster);
 
-        shifter = std::make_shared<frc::DoubleSolenoid>(1,2);
+        shifter = std::make_shared<frc::DoubleSolenoid>(DRIVE_SHIFT_LOW, DRIVE_SHIFT_HIGH);
 
         // build the ramsete controller
         controller = frc::RamseteController();
@@ -32,6 +33,13 @@ namespace robot {
     }
 
     void Drivetrain::onLoop(){
+        switch(driveState){
+
+        }
+
+        switch(shiftState){
+
+        }
 
     }
 
@@ -39,19 +47,23 @@ namespace robot {
 
     }
 
-    void Drivetrain::leftCallback(){
+    void Drivetrain::trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg){
 
     }
 
-    void Drivetrain::rightCallback(){
+    void Drivetrain::twistCallback(const geometry_msgs::msg::Twist msg){
 
     }
 
     /**
-     * callback for gearbox settings to be chnaged / streamed in
+     * callback for gearbox settings to be changed / streamed in
      **/ 
-    void Drivetrain::gearCallback(){
+    void Drivetrain::gearCallback(const std_msgs::msg::Int16 msg){
 
     }
-    
+
+    void Drivetrain::controlCallback(const std_msgs::msg::Int16 msg){
+
+    }
+
 } // namespace robot

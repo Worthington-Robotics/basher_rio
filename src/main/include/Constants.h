@@ -1,0 +1,9 @@
+#pragma once
+
+#define DRIVE_LEFT_MASTER 1
+#define DRIVE_RIGHT_MASTER 2
+#define DRIVE_LEFT_FOLLOWER 3
+#define DRIVE_RIGHT_FOLLOWER 4
+
+#define DRIVE_SHIFT_LOW 1
+#define DRIVE_SHIFT_HIGH 2
