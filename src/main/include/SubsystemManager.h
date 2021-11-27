@@ -12,7 +12,7 @@ namespace robot
 
     class SubsystemManager : public rclcpp::Node
     {
-
+        public: 
         SubsystemManager();
 
         /**

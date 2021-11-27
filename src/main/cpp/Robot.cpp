@@ -4,6 +4,7 @@
 
 #include "Robot.h"
 #include <iostream>
+#include "subsystems/drivetrain.h"
 
 void Robot::RobotInit()
 {
@@ -14,8 +15,7 @@ void Robot::RobotInit()
   // intialize all subsystems here
   manager = std::make_shared<robot::SubsystemManager>();
   manager->registerSubsystems(std::vector<std::shared_ptr<robot::Subsystem>>{
-
-  });
+      std::make_shared<robot::Drivetrain>()});
 
   frc::DriverStation::GetInstance().ReportWarning("Robot Code Initialized");
 }
@@ -23,23 +23,31 @@ void Robot::RobotInit()
 void Robot::RobotPeriodic()
 {
   //std::cout << "spinning" << std::endl;
-  rclcpp::spin_some(node);
+  rclcpp::spin_some(manager);
 }
 
-void Robot::AutonomousInit() {}
+void Robot::AutonomousInit()
+{
+  manager->startLoop();
+}
 void Robot::AutonomousPeriodic() {}
 
-void Robot::TeleopInit() {
+void Robot::TeleopInit()
+{
   manager->startLoop();
 }
 void Robot::TeleopPeriodic() {}
 
-void Robot::DisabledInit() {
+void Robot::DisabledInit()
+{
   manager->stopLoop();
 }
 void Robot::DisabledPeriodic() {}
 
-void Robot::TestInit() {}
+void Robot::TestInit()
+{
+  manager->startLoop();
+}
 void Robot::TestPeriodic() {}
 
 #ifndef RUNNING_FRC_TESTS

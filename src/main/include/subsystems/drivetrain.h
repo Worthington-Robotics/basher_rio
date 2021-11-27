@@ -18,24 +18,29 @@ namespace robot
 
     /**
      * Possible control states for the drivetrain to be in
-     **/ 
-    enum ControlState {
+     **/
+    enum ControlState
+    {
         OPEN_LOOP_TWIST,
-        OPEN_LOOP_DIFF,
         VELOCITY,
         RAMSETE,
         PURSUIT
     };
 
-    enum ShifterState {
-        OPEN_LOOP,
+    /**
+     * Possible control states for the transmissions to be in
+     **/
+    enum ShifterState
+    {
+        DISABLED,
         VELOCITY_THRESH,
         FIXED_HIGH,
-        FIXED_LOW  
+        FIXED_LOW
     };
 
     class Drivetrain : public Subsystem
     {
+        public:
 
         Drivetrain();
 
@@ -65,51 +70,60 @@ namespace robot
          **/
         void publishData() override;
 
-
         /**
          * Callbacks for ROS Subscribers 
-         **/ 
+         **/
 
-
+        /**
+         * Callback for streaming generated trajectories into the trajectory follower
+         **/
         void trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg);
 
+        /**
+         * Calbback for streaming the current desired twist of the drivetrain
+         **/
         void twistCallback(const geometry_msgs::msg::Twist msg);
 
         /**
-         * Callback for setting transmission mode between the 4 availiable modes.
+         * Callback for setting transmission mode between the control modes.
          * See ShifterState for availiable modes.
-         **/ 
-        void gearCallback(const std_msgs::msg::Int16 msg);
+         **/
+        void transModeCallback(const std_msgs::msg::Int16 msg);
 
         /**
          * Callback for setting drivetrain modes. Selects between the control modes
-         * enumerated in
-         *  the ControlState enum.
-         **/ 
-        void controlCallback(const std_msgs::msg::Int16 msg);
-
-
+         * enumerated in the ControlState enum.
+         **/
+        void driveModeCallback(const std_msgs::msg::Int16 msg);
 
     private:
+        /**
+         * Configure the associated motor controllers with their settings as specified in constants
+         **/ 
+        void configMotors();
+
+        void updateSensorData();
+
         //IO devices
         std::shared_ptr<TalonFX> leftMaster, rightMaster, leftFollower, rightFollower;
         std::shared_ptr<frc::DoubleSolenoid> shifter;
         std::shared_ptr<PigeonIMU> imu;
 
         // ROS Publishers
-        rclcpp::Publisher<sensor_msgs::msg::Imu> imuPub;
-        rclcpp::Publisher<sensor_msgs::msg::JointState> leftWheel, rightWheel;
+        rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imuPub;
+        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr wheelStatePub;
 
         // ROS Messages for publishing
         sensor_msgs::msg::Imu imuMsg;
-        sensor_msgs::msg::JointState leftWheelState, rightWheelState; 
+        sensor_msgs::msg::JointState wheelState;
 
         // ROS Subscibers
-        rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory> trajectorySub;
-        rclcpp::Subscription<geometry_msgs::msg::Twist> twistSub;
+        rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectorySub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twistSub;
+        rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr transModeSub, DriveModeSub;
 
-        // mode control subscribers
-        rclcpp::Subscription<std_msgs::msg::Int16> transModeSub, DriveModeSub;
+        // ROS Messages for storing subscription data
+        geometry_msgs::msg::Twist lastTwist;
 
         // underlying controllers
         frc::RamseteController controller;
@@ -117,6 +131,12 @@ namespace robot
         // Control states for the DT
         ControlState driveState;
         ShifterState shiftState;
+
+        double lastTwistTime;
+
+        // Demand variables
+        double leftDemand, rightDemand;
+        frc::DoubleSolenoid::Value shifterDemand;
     };
 
 } // namespace robot
