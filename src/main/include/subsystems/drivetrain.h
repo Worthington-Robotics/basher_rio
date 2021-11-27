@@ -86,6 +86,11 @@ namespace robot
         void twistCallback(const geometry_msgs::msg::Twist msg);
 
         /**
+         * Callback for streaming joystick input into the drivetrain
+         **/ 
+        void stickCallback(const sensor_msgs::msg::Joy msg);
+
+        /**
          * Callback for setting transmission mode between the control modes.
          * See ShifterState for availiable modes.
          **/
@@ -126,7 +131,7 @@ namespace robot
 
         // ROS Messages for storing subscription data
         geometry_msgs::msg::Twist lastTwist;
-        sensor_msgs::msg::Joy lastJoy;
+        sensor_msgs::msg::Joy lastStick;
 
         // underlying controllers
         frc::RamseteController controller;

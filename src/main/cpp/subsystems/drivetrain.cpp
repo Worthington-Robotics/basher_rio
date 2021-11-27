@@ -302,6 +302,11 @@ namespace robot
         lastTwist = msg;
     }
 
+    void Drivetrain::stickCallback(const sensor_msgs::msg::Joy msg){
+        lastStickTime = frc::Timer::GetFPGATimestamp();
+        lastStick = msg;
+    }
+
     void Drivetrain::transModeCallback(const std_msgs::msg::Int16 msg)
     {
         shiftState = static_cast<ShifterState>(msg.data);
