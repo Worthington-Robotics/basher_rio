@@ -1,5 +1,6 @@
 #include "subsystems/userinput.h"
 #include <cmath>
+#include <string>
 
 namespace robot
 {
@@ -19,7 +20,8 @@ namespace robot
         for (auto stick = sticks.begin(); stick != sticks.end(); ++stick)
         {
             stickPubs.push_back(
-                node->create_publisher<sensor_msgs::msg::Joy>("/sticks/stick" + stick->GetPort(), rclcpp::SensorDataQoS()));
+                node->create_publisher<sensor_msgs::msg::Joy>("/sticks/stick" + std::to_string(stick->GetPort()), rclcpp::SensorDataQoS())
+            );
         }
     }
 
@@ -45,9 +47,8 @@ namespace robot
 
             int numButtons = sticks.at(i).GetButtonCount();
             std::vector<int> buttonValues;
-            for (int button = 1; button < numButtons + 1; button++)
-            {
-                buttonValues.push_back(sticks.at(i).GetRawButton(button) ? 0 : 1);
+            for(int button = 1; button < numButtons + 1; button++){
+                buttonValues.push_back(sticks.at(i).GetRawButton(button)? 1: 0);
             }
             stickData.buttons = buttonValues;
 

@@ -31,7 +31,6 @@ void Robot::RobotInit()
 void Robot::RobotPeriodic()
 {
   //std::cout << "spinning" << std::endl;
-  rclcpp::spin_some(manager);
 }
 
 void Robot::AutonomousInit()

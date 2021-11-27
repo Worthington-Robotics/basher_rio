@@ -7,13 +7,19 @@
 #define DRIVE_RIGHT_MASTER 2
 #define DRIVE_LEFT_FOLLOWER 3
 #define DRIVE_RIGHT_FOLLOWER 4
+#define IMU_ID 1
 
 // Solenoid ID mappings
 #define DRIVE_SHIFT_LOW 1
 #define DRIVE_SHIFT_HIGH 2
 
 // Which sticks to watch from the driverstation
-#define USER_STICKS {0, 1, 2}
+#define USER_STICKS {0}
+
+#define DRIVE_STICK_TOPIC "/sticks/stick0"
+#define DRIVE_STICK_SCALAR {1, 1, 0.5, 1}
+#define DRIVE_STICK_DEADBAND 0.05
+#define DRIVE_STICK_POWER 2
 
 /**
  *  Constants for the drivetrain

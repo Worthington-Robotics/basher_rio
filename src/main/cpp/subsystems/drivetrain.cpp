@@ -20,6 +20,8 @@ namespace robot
         leftFollower = std::make_shared<TalonFX>(DRIVE_LEFT_FOLLOWER);
         rightFollower = std::make_shared<TalonFX>(DRIVE_RIGHT_FOLLOWER);
 
+        imu = std::make_shared<PigeonIMU>(IMU_ID);
+
         shifter = std::make_shared<frc::DoubleSolenoid>(DRIVE_SHIFT_LOW, DRIVE_SHIFT_HIGH);
 
         configMotors();
@@ -132,6 +134,9 @@ namespace robot
         lastTwistTime = 0;
 
         shifterDemand = frc::DoubleSolenoid::Value::kForward; // default to low gear
+
+        shiftState = DISABLED;
+        driveState = OPEN_LOOP_STICK;
     }
 
     void Drivetrain::onStart()
@@ -140,6 +145,7 @@ namespace robot
 
     void Drivetrain::updateSensorData()
     {
+        //frc::DriverStation::ReportWarning("Updating drive sensor data");
         // read the current IMU state
         int16_t accelData[3];
         imu->GetBiasedAccelerometer(accelData);
@@ -192,7 +198,12 @@ namespace robot
             if (lastStickTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
             {
                 // parse the joy message
-                std::vector<double> joyData = UserInput::scalarCut(lastJoy, )
+                std::vector<double> joyData = UserInput::scalarCut(lastJoy, DRIVE_STICK_DEADBAND,
+                                                                   DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
+
+                auto stickTwist = geometry_msgs::msg::Twist();
+                stickTwist.linear.x = joyData.at(0);
+                stickTwist.angular.z = joyData.at(2);
 
                 // convert to demands
                 twistToDemand(lastTwist, leftDemand, rightDemand);
@@ -201,6 +212,9 @@ namespace robot
             { // otherwise force motors to zero, there is stale data
                 leftDemand = rightDemand = 0;
             }
+
+            leftMaster->Set(ControlMode::PercentOutput, leftDemand);
+            rightMaster->Set(ControlMode::PercentOutput, rightDemand);
             break;
 
         case VELOCITY_TWIST:
