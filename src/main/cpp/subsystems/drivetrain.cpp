@@ -38,6 +38,7 @@ namespace robot
         // Create subscribers
         trajectorySub = node->create_subscription<trajectory_msgs::msg::JointTrajectory>("/drive/active_traj", rclcpp::SystemDefaultsQoS(), std::bind(&Drivetrain::trajectoryCallback, this, _1));
         twistSub = node->create_subscription<geometry_msgs::msg::Twist>("/drive/velocity_twist", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::twistCallback, this, _1));
+        stickSub = node->create_subscription<sensor_msgs::msg::Joy>(DRIVE_STICK_TOPIC, rclcpp::SensorDataQoS(), std::bind(&Drivetrain::stickCallback, this, _1));
 
         transModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/trans_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::transModeCallback, this, _1));
         DriveModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/drive_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::driveModeCallback, this, _1));
@@ -198,7 +199,7 @@ namespace robot
             if (lastStickTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
             {
                 // parse the joy message
-                std::vector<double> joyData = UserInput::scalarCut(lastJoy, DRIVE_STICK_DEADBAND,
+                std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
                                                                    DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
 
                 auto stickTwist = geometry_msgs::msg::Twist();
