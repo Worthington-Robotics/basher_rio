@@ -17,6 +17,8 @@ namespace robot {
         leftFollower = std::make_shared<TalonFX>(DRIVE_LEFT_FOLLOWER);
         rightFollower = std::make_shared<TalonFX>(DRIVE_RIGHT_FOLLOWER);
 
+        imu = std::make_shared<PigeonIMU>(IMU_ID);
+
         shifter = std::make_shared<frc::DoubleSolenoid>(DRIVE_SHIFT_LOW, DRIVE_SHIFT_HIGH);
 
         configMotors();
@@ -125,6 +127,9 @@ namespace robot {
         lastTwistTime = 0;
 
         shifterDemand = frc::DoubleSolenoid::Value::kForward; // default to low gear
+
+        shiftState = DISABLED;
+        driveState = OPEN_LOOP_TWIST;
     }
 
     void Drivetrain::onStart(){
@@ -132,6 +137,7 @@ namespace robot {
     }
 
     void Drivetrain::updateSensorData(){
+        //frc::DriverStation::ReportWarning("Updating drive sensor data");
         // read the current IMU state
         int16_t accelData[3];
         imu->GetBiasedAccelerometer(accelData);
@@ -175,6 +181,7 @@ namespace robot {
         // Read sensors
         updateSensorData();
 
+        //frc::DriverStation::ReportWarning("Updating drive control state");
         switch(driveState){
             case OPEN_LOOP_TWIST:
                 // if we are safe, set motor demands,

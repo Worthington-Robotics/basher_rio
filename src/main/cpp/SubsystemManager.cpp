@@ -1,5 +1,8 @@
 #include "SubsystemManager.h"
 #include "units/time.h"
+#include <exception>
+#include <frc/DriverStation.h>
+#include "rclcpp/rclcpp.hpp"
 
 namespace robot
 {
@@ -21,7 +24,6 @@ namespace robot
             subsystem->createRosBindings(this);
             subsystem->reset();
         }
-
     }
 
     void SubsystemManager::reset()
@@ -45,22 +47,35 @@ namespace robot
 
     void SubsystemManager::onLoop()
     {
-        // For the first iteration, run onstart
-        if (isFirstIteration)
+        try
         {
-            for (std::shared_ptr<Subsystem> subsystem : subsystems)
+            // For the first iteration, run onstart
+            if (isFirstIteration)
             {
-                subsystem->onStart();
+                //frc::DriverStation::ReportWarning("Running first iteration");
+                for (std::shared_ptr<Subsystem> subsystem : subsystems)
+                {
+                    subsystem->onStart();
+                    subsystem->publishData();
+                }
+                isFirstIteration = false;
             }
-            isFirstIteration = false;
-        }
-        // for all others run onloop
-        else
-        {
-            for (std::shared_ptr<Subsystem> subsystem : subsystems)
+            // for all others run onloop
+            else
             {
-                subsystem->onLoop();
+                //frc::DriverStation::ReportWarning("Running onloop iteration");
+                for (std::shared_ptr<Subsystem> subsystem : subsystems)
+                {
+                    subsystem->onLoop();
+                    subsystem->publishData();
+                }
             }
+
+            rclcpp::spin_some(this->shared_from_this());
+        } catch(const std::exception & e){
+            frc::DriverStation::ReportError(e.what());
+        } catch ( ... ){
+            frc::DriverStation::ReportError("Looper Thread died with unknown exception");
         }
     }
 
