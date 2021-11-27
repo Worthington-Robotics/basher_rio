@@ -12,6 +12,9 @@
 #define DRIVE_SHIFT_LOW 1
 #define DRIVE_SHIFT_HIGH 2
 
+// Which sticks to watch from the driverstation
+#define USER_STICKS {0, 1, 2}
+
 /**
  *  Constants for the drivetrain
  **/ 

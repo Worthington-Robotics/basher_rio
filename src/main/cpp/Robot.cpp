@@ -5,6 +5,8 @@
 #include "Robot.h"
 #include <iostream>
 #include "subsystems/drivetrain.h"
+#include "subsystems/userinput.h"
+#include "Constants.h"
 
 void Robot::RobotInit()
 {
@@ -12,10 +14,16 @@ void Robot::RobotInit()
 
   frc::DriverStation::GetInstance().ReportWarning("ROS Sucessfully Init!");
 
+  // construct subsystems
+  auto drive = std::make_shared<robot::Drivetrain>();
+  auto sticks = std::make_shared<robot::UserInput>();
+  sticks->registerSticks(USER_STICKS); //  register which joystick IDs to read
+
   // intialize all subsystems here
   manager = std::make_shared<robot::SubsystemManager>();
   manager->registerSubsystems(std::vector<std::shared_ptr<robot::Subsystem>>{
-      std::make_shared<robot::Drivetrain>()});
+      drive,
+      sticks});
 
   frc::DriverStation::GetInstance().ReportWarning("Robot Code Initialized");
 }
