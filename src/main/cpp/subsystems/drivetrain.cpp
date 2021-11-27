@@ -2,15 +2,18 @@
 #include "Constants.h"
 #include <frc/DriverStation.h>
 #include <frc/drive/DifferentialDrive.h>
+#include "subsystems/userinput.h"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
 
 using std::placeholders::_1;
 
-namespace robot {
+namespace robot
+{
 
-    Drivetrain::Drivetrain(){
+    Drivetrain::Drivetrain()
+    {
         leftMaster = std::make_shared<TalonFX>(DRIVE_LEFT_MASTER);
         rightMaster = std::make_shared<TalonFX>(DRIVE_RIGHT_MASTER);
 
@@ -24,19 +27,22 @@ namespace robot {
         reset();
     }
 
-    void Drivetrain::createRosBindings(rclcpp::Node * node){
+    void Drivetrain::createRosBindings(rclcpp::Node *node)
+    {
         // Create sensor data publishers
         imuPub = node->create_publisher<sensor_msgs::msg::Imu>("/drive/imu", rclcpp::SensorDataQoS());
         wheelStatePub = node->create_publisher<sensor_msgs::msg::JointState>("/drive/wheel_state", rclcpp::SensorDataQoS());
 
         // Create subscribers
         trajectorySub = node->create_subscription<trajectory_msgs::msg::JointTrajectory>("/drive/active_traj", rclcpp::SystemDefaultsQoS(), std::bind(&Drivetrain::trajectoryCallback, this, _1));
-        twistSub = node->create_subscription<geometry_msgs::msg::Twist>("/drive/active_twist", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::twistCallback, this, _1));
+        twistSub = node->create_subscription<geometry_msgs::msg::Twist>("/drive/velocity_twist", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::twistCallback, this, _1));
+
         transModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/trans_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::transModeCallback, this, _1));
         DriveModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/drive_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::driveModeCallback, this, _1));
     }
 
-    void Drivetrain::configMotors(){
+    void Drivetrain::configMotors()
+    {
         // Configure left master falcon
         leftMaster->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
         leftMaster->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
@@ -90,7 +96,8 @@ namespace robot {
         rightFollower->Follow(*rightMaster);
     }
 
-    void Drivetrain::reset(){
+    void Drivetrain::reset()
+    {
         // reset cached data to prevent nullptrs
         wheelState = sensor_msgs::msg::JointState();
         wheelState.name = {"left", "right"};
@@ -127,11 +134,12 @@ namespace robot {
         shifterDemand = frc::DoubleSolenoid::Value::kForward; // default to low gear
     }
 
-    void Drivetrain::onStart(){
-
+    void Drivetrain::onStart()
+    {
     }
 
-    void Drivetrain::updateSensorData(){
+    void Drivetrain::updateSensorData()
+    {
         // read the current IMU state
         int16_t accelData[3];
         imu->GetBiasedAccelerometer(accelData);
@@ -158,106 +166,135 @@ namespace robot {
         wheelState.position = {leftMaster->GetSelectedSensorVelocity(), rightMaster->GetSelectedSensorVelocity()};
         wheelState.velocity = {leftMaster->GetSelectedSensorPosition(), rightMaster->GetSelectedSensorPosition()};
         wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
-
     }
 
     // Average the wheel state velocities
-    double getFwdVelocity(sensor_msgs::msg::JointState wheelState){
+    double getFwdVelocity(sensor_msgs::msg::JointState wheelState)
+    {
         return (wheelState.velocity.at(0) + wheelState.velocity.at(0)) / 2.0;
     }
 
-    void twistToDemand(const geometry_msgs::msg::Twist twist, double & leftDemand, double & rightDemand){
+    void twistToDemand(const geometry_msgs::msg::Twist twist, double &leftDemand, double &rightDemand)
+    {
         leftDemand = twist.linear.x - DRIVE_TRACK_WIDTH / 2 * twist.angular.z;
         rightDemand = twist.linear.x + DRIVE_TRACK_WIDTH / 2 * twist.angular.z;
     }
 
-    void Drivetrain::onLoop(){
+    void Drivetrain::onLoop()
+    {
         // Read sensors
         updateSensorData();
 
-        switch(driveState){
-            case OPEN_LOOP_TWIST:
-                // if we are safe, set motor demands,
-                if(lastTwistTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp()){
-                    twistToDemand(lastTwist, leftDemand, rightDemand);
-                } else { // otherwise force motors to zero, there is stale data
-                    leftDemand = rightDemand = 0;
-                }
+        switch (driveState)
+        {
+        case OPEN_LOOP_STICK:
+            // if we are safe, set motor demands,
+            if (lastStickTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
+            {
+                // parse the joy message
+                std::vector<double> joyData = UserInput::scalarCut(lastJoy, )
 
-                leftMaster->Set(ControlMode::PercentOutput, leftDemand);
-                rightMaster->Set(ControlMode::PercentOutput, rightDemand);
-                break;
-            case VELOCITY:
-            case RAMSETE:
-            case PURSUIT: // for now have pursuit as an illegal mode
-                frc::DriverStation::ReportWarning("Mode is not currently implemented");
-                leftMaster->Set(ControlMode::PercentOutput, 0);
-                rightMaster->Set(ControlMode::PercentOutput, 0);
-                break;
+                // convert to demands
+                twistToDemand(lastTwist, leftDemand, rightDemand);
+            }
+            else
+            { // otherwise force motors to zero, there is stale data
+                leftDemand = rightDemand = 0;
+            }
+            break;
 
-            default:
-                leftMaster->Set(ControlMode::PercentOutput, 0);
-                rightMaster->Set(ControlMode::PercentOutput, 0);
-                frc::DriverStation::ReportError("Drivetrain attempted to enter an illegal mode");
+        case VELOCITY_TWIST:
+            // if we are safe, set motor demands,
+            if (lastTwistTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
+            {
+                twistToDemand(lastTwist, leftDemand, rightDemand);
+            }
+            else
+            { // otherwise force motors to zero, there is stale data
+                leftDemand = rightDemand = 0;
+            }
+
+            leftMaster->Set(ControlMode::PercentOutput, leftDemand);
+            rightMaster->Set(ControlMode::PercentOutput, rightDemand);
+            break;
+
+        case RAMSETE:
+        case PURSUIT: // for now have pursuit as an illegal mode
+            frc::DriverStation::ReportWarning("Mode is not currently implemented");
+            leftMaster->Set(ControlMode::PercentOutput, 0);
+            rightMaster->Set(ControlMode::PercentOutput, 0);
+            break;
+
+        default:
+            leftMaster->Set(ControlMode::PercentOutput, 0);
+            rightMaster->Set(ControlMode::PercentOutput, 0);
+            frc::DriverStation::ReportError("Drivetrain attempted to enter an illegal mode");
         }
 
-        switch(shiftState){
-            case DISABLED:
-                // set into off state
-                shifterDemand = frc::DoubleSolenoid::Value::kOff; 
-                break;
+        switch (shiftState)
+        {
+        case DISABLED:
+            // set into off state
+            shifterDemand = frc::DoubleSolenoid::Value::kOff;
+            break;
 
-            case VELOCITY_THRESH:
-                if(getFwdVelocity(wheelState) > DRIVE_SHIFT_HIGH_THRESH){
-                    // set into high gear
-                    shifterDemand = frc::DoubleSolenoid::Value::kReverse; 
-                } else if(getFwdVelocity(wheelState) < DRIVE_SHIFT_LOW_THRESH){
-                    // set into low gear
-                    shifterDemand = frc::DoubleSolenoid::Value::kForward;
-                }
-                break;
-
-            case FIXED_HIGH:
+        case VELOCITY_THRESH:
+            if (getFwdVelocity(wheelState) > DRIVE_SHIFT_HIGH_THRESH)
+            {
                 // set into high gear
-                shifterDemand = frc::DoubleSolenoid::Value::kReverse; 
-                break;
-
-            case FIXED_LOW:
+                shifterDemand = frc::DoubleSolenoid::Value::kReverse;
+            }
+            else if (getFwdVelocity(wheelState) < DRIVE_SHIFT_LOW_THRESH)
+            {
                 // set into low gear
                 shifterDemand = frc::DoubleSolenoid::Value::kForward;
-                break;
+            }
+            break;
 
-            default:
-                frc::DriverStation::ReportError("Transmissions attempted to enter an illegal mode");
+        case FIXED_HIGH:
+            // set into high gear
+            shifterDemand = frc::DoubleSolenoid::Value::kReverse;
+            break;
+
+        case FIXED_LOW:
+            // set into low gear
+            shifterDemand = frc::DoubleSolenoid::Value::kForward;
+            break;
+
+        default:
+            frc::DriverStation::ReportError("Transmissions attempted to enter an illegal mode");
         }
 
         shifter->Set(shifterDemand);
-
     }
 
-    void Drivetrain::publishData(){
+    void Drivetrain::publishData()
+    {
         imuPub->publish(imuMsg);
         wheelStatePub->publish(wheelState);
     }
 
-    void Drivetrain::trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg){
-
+    void Drivetrain::trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg)
+    {
     }
 
     /**
      * Updates the twist lockout timer, and the latest twist information.
      * the units on the twist indicies are mode specific.
-     **/ 
-    void Drivetrain::twistCallback(const geometry_msgs::msg::Twist msg){
+     **/
+    void Drivetrain::twistCallback(const geometry_msgs::msg::Twist msg)
+    {
         lastTwistTime = frc::Timer::GetFPGATimestamp();
         lastTwist = msg;
     }
 
-    void Drivetrain::transModeCallback(const std_msgs::msg::Int16 msg){
+    void Drivetrain::transModeCallback(const std_msgs::msg::Int16 msg)
+    {
         shiftState = static_cast<ShifterState>(msg.data);
     }
 
-    void Drivetrain::driveModeCallback(const std_msgs::msg::Int16 msg){
+    void Drivetrain::driveModeCallback(const std_msgs::msg::Int16 msg)
+    {
         driveState = static_cast<ControlState>(msg.data);
     }
 

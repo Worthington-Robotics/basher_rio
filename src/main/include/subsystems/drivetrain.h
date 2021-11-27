@@ -10,6 +10,7 @@
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/int16.hpp>
 
@@ -21,8 +22,8 @@ namespace robot
      **/
     enum ControlState
     {
-        OPEN_LOOP_TWIST,
-        VELOCITY,
+        OPEN_LOOP_STICK,
+        VELOCITY_TWIST,
         RAMSETE,
         PURSUIT
     };
@@ -80,7 +81,7 @@ namespace robot
         void trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg);
 
         /**
-         * Calbback for streaming the current desired twist of the drivetrain
+         * Calbback for streaming the current desired velocity twist of the drivetrain
          **/
         void twistCallback(const geometry_msgs::msg::Twist msg);
 
@@ -120,10 +121,12 @@ namespace robot
         // ROS Subscibers
         rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectorySub;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twistSub;
+        rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr stickSub;
         rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr transModeSub, DriveModeSub;
 
         // ROS Messages for storing subscription data
         geometry_msgs::msg::Twist lastTwist;
+        sensor_msgs::msg::Joy lastJoy;
 
         // underlying controllers
         frc::RamseteController controller;
@@ -132,7 +135,8 @@ namespace robot
         ControlState driveState;
         ShifterState shiftState;
 
-        double lastTwistTime;
+        // last update time for safety critical topics
+        double lastTwistTime, lastStickTime;
 
         // Demand variables
         double leftDemand, rightDemand;
