@@ -10,56 +10,60 @@
 
 void Robot::RobotInit()
 {
-  rclcpp::init(0, NULL);
+    rclcpp::init(0, NULL);
 
-  frc::DriverStation::GetInstance().ReportWarning("ROS Sucessfully Init!");
+    frc::DriverStation::GetInstance().ReportWarning("ROS Sucessfully Init!");
 
-  // construct subsystems
-  auto drive = std::make_shared<robot::Drivetrain>();
-  auto sticks = std::make_shared<robot::UserInput>();
-  sticks->registerSticks(USER_STICKS); //  register which joystick IDs to read
+    // construct subsystems
+    auto drive = std::make_shared<robot::Drivetrain>();
+    auto sticks = std::make_shared<robot::UserInput>();
+    sticks->registerSticks(USER_STICKS); //  register which joystick IDs to read
 
-  // intialize all subsystems here
-  manager = std::make_shared<robot::SubsystemManager>();
-  manager->registerSubsystems(std::vector<std::shared_ptr<robot::Subsystem>>{
-      drive,
-      sticks});
+    // intialize all subsystems here
+    manager = std::make_shared<robot::SubsystemManager>();
+    manager->registerSubsystems(std::vector<std::shared_ptr<robot::Subsystem>>{
+        drive,
+        sticks});
 
-  frc::DriverStation::GetInstance().ReportWarning("Robot Code Initialized");
+    frc::DriverStation::GetInstance().ReportWarning("Robot Code Initialized");
 }
 
 void Robot::RobotPeriodic()
 {
-  //std::cout << "spinning" << std::endl;
+    //std::cout << "spinning" << std::endl;
 }
 
 void Robot::AutonomousInit()
 {
-  manager->startLoop();
+    manager->stopDisabledLoop();
+    manager->startEnabledLoop();
 }
 void Robot::AutonomousPeriodic() {}
 
 void Robot::TeleopInit()
 {
-  manager->startLoop();
+    manager->stopDisabledLoop();
+    manager->startEnabledLoop();
 }
 void Robot::TeleopPeriodic() {}
 
 void Robot::DisabledInit()
 {
-  manager->stopLoop();
+    manager->stopEnabledLoop();
+    manager->startDisabledLoop();
 }
 void Robot::DisabledPeriodic() {}
 
 void Robot::TestInit()
 {
-  manager->startLoop();
+    manager->stopDisabledLoop();
+    manager->startEnabledLoop();
 }
 void Robot::TestPeriodic() {}
 
 #ifndef RUNNING_FRC_TESTS
 int main()
 {
-  return frc::StartRobot<Robot>();
+    return frc::StartRobot<Robot>();
 }
 #endif

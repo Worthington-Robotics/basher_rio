@@ -6,6 +6,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <iostream>
 
 using std::placeholders::_1;
 
@@ -66,7 +67,7 @@ namespace robot
         rightMaster->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
         rightMaster->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
         rightMaster->SetSensorPhase(true);
-        rightMaster->SetInverted(false);
+        rightMaster->SetInverted(true);
         rightMaster->SetNeutralMode(NeutralMode::Brake);
         rightMaster->SelectProfileSlot(0, 0);
         rightMaster->Config_kF(0, DRIVE_RIGHT_KF, 0);
@@ -92,7 +93,7 @@ namespace robot
         rightFollower->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 255, 0);
         rightFollower->SetStatusFramePeriod(StatusFrameEnhanced::Status_1_General, 255, 0);
         rightFollower->SetSensorPhase(true);
-        rightFollower->SetInverted(false);
+        rightFollower->SetInverted(true);
         rightFollower->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
         rightFollower->EnableVoltageCompensation(true);
         rightFollower->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
@@ -107,6 +108,8 @@ namespace robot
         wheelState.position = {0, 0};
         wheelState.velocity = {0, 0};
         wheelState.effort = {0, 0};
+
+        // TODO reset sensors
 
         // Reset the IMU message and wait for data
         imuMsg = sensor_msgs::msg::Imu();
@@ -170,8 +173,8 @@ namespace robot
         imuMsg.orientation.z = orientData[3];
 
         //Read the current left and right joint states
-        wheelState.position = {leftMaster->GetSelectedSensorVelocity(), rightMaster->GetSelectedSensorVelocity()};
-        wheelState.velocity = {leftMaster->GetSelectedSensorPosition(), rightMaster->GetSelectedSensorPosition()};
+        wheelState.position = {leftMaster->GetSelectedSensorPosition(), rightMaster->GetSelectedSensorPosition()};
+        wheelState.velocity = {leftMaster->GetSelectedSensorVelocity(), rightMaster->GetSelectedSensorVelocity()};
         wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
     }
 
@@ -185,6 +188,13 @@ namespace robot
     {
         leftDemand = twist.linear.x - DRIVE_TRACK_WIDTH / 2 * twist.angular.z;
         rightDemand = twist.linear.x + DRIVE_TRACK_WIDTH / 2 * twist.angular.z;
+    }
+
+    void arcadeDrive (const geometry_msgs::msg::Twist twist, double &leftDemand, double &rightDemand){
+        const double maxInput = std::max(std::max(std::abs(twist.linear.x - twist.angular.z), std::abs(twist.linear.x + twist.angular.z)), 1.0);
+
+        rightDemand = (twist.linear.x + twist.angular.z) / maxInput;
+        leftDemand = (twist.linear.x - twist.angular.z) / maxInput;
     }
 
     void Drivetrain::onLoop()
@@ -202,12 +212,14 @@ namespace robot
                 std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
                                                                    DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
 
+                //std::cout << "joyData " << joyData.at(0) << " " << joyData.at(1) << std::endl;
+
                 auto stickTwist = geometry_msgs::msg::Twist();
                 stickTwist.linear.x = joyData.at(0);
-                stickTwist.angular.z = joyData.at(2);
+                stickTwist.angular.z = joyData.at(1);
 
                 // convert to demands
-                twistToDemand(lastTwist, leftDemand, rightDemand);
+                arcadeDrive(stickTwist, leftDemand, rightDemand);
             }
             else
             { // otherwise force motors to zero, there is stale data
@@ -310,11 +322,13 @@ namespace robot
 
     void Drivetrain::transModeCallback(const std_msgs::msg::Int16 msg)
     {
+        std::cout << "changing transmission to mode " << msg.data << std::endl;
         shiftState = static_cast<ShifterState>(msg.data);
     }
 
     void Drivetrain::driveModeCallback(const std_msgs::msg::Int16 msg)
     {
+        std::cout << "changing drivetrain to mode " << msg.data << std::endl;
         driveState = static_cast<ControlState>(msg.data);
     }
 

@@ -9,7 +9,8 @@ namespace robot
 
     SubsystemManager::SubsystemManager() : Node("roborio"),
                                            subsystems(),
-                                           notif(std::bind(&SubsystemManager::onLoop, this))
+                                           enabledNotif(std::bind(&SubsystemManager::enabledLoop, this)),
+                                           disabledNotif(std::bind(&SubsystemManager::disabledLoop, this))
     {
     }
 
@@ -34,18 +35,28 @@ namespace robot
         }
     }
 
-    void SubsystemManager::startLoop()
+    void SubsystemManager::startEnabledLoop()
     {
         isFirstIteration = true;
-        notif.StartPeriodic(10_ms);
+        enabledNotif.StartPeriodic(10_ms);
     }
 
-    void SubsystemManager::stopLoop()
+    void SubsystemManager::stopEnabledLoop()
     {
-        notif.Stop();
+        enabledNotif.Stop();
     }
 
-    void SubsystemManager::onLoop()
+
+    void SubsystemManager::startDisabledLoop(){
+        disabledNotif.StartPeriodic(10_ms);
+    }
+
+    void SubsystemManager::stopDisabledLoop(){
+        disabledNotif.Stop();
+    }
+
+
+    void SubsystemManager::enabledLoop()
     {
         try
         {
@@ -77,6 +88,10 @@ namespace robot
         } catch ( ... ){
             frc::DriverStation::ReportError("Looper Thread died with unknown exception");
         }
+    }
+
+    void SubsystemManager::disabledLoop(){
+        rclcpp::spin_some(this->shared_from_this());
     }
 
 } // namespace robot

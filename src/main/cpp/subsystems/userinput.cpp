@@ -38,17 +38,22 @@ namespace robot
             sensor_msgs::msg::Joy stickData;
 
             int numAxes = sticks.at(i).GetAxisCount();
-            std::vector<float> axesValues;
-            for (int axis = 1; axis < numAxes + 1; axis++)
+            //std::cout << "Stick " << i << " axis count: " << numAxes << " axis values :[";
+            
+            std::vector<float> axisValues(numAxes);
+            for (int axis = 0; axis < numAxes; axis++)
             {
-                axesValues.push_back(sticks.at(i).GetRawAxis(axis));
+                axisValues.at(axis) = sticks.at(i).GetRawAxis(axis);
+                //std::cout << axisValues.at(axis) << " ";
             }
-            stickData.axes = axesValues;
+            stickData.axes = axisValues;
+            //std::cout << "]" << std::endl;
+             
 
             int numButtons = sticks.at(i).GetButtonCount();
-            std::vector<int> buttonValues;
-            for(int button = 1; button < numButtons + 1; button++){
-                buttonValues.push_back(sticks.at(i).GetRawButton(button)? 1: 0);
+            std::vector<int> buttonValues(numButtons);
+            for(int button = 0; button < numButtons; button++){
+                buttonValues.at(button) = sticks.at(i).GetRawButton(button + 1)? 1: 0;
             }
             stickData.buttons = buttonValues;
 
@@ -62,7 +67,7 @@ namespace robot
         auto output = std::vector<double>();
         for (double axis : joyMsg.axes)
         {
-            if (abs(axis) < deadBand)
+            if (std::abs(axis) < deadBand)
             {
                 output.push_back(0.0);
             }
@@ -70,11 +75,11 @@ namespace robot
             {
                 if (axis < 0)
                 {
-                    output.push_back(abs(pow(axis, power)));
+                    output.push_back(-std::abs(std::pow(axis, power)));
                 }
                 else
                 {
-                    output.push_back(abs(pow(axis, power)));
+                    output.push_back(std::abs(std::pow(axis, power)));
                 }
             }
         }
