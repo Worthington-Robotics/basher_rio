@@ -4,6 +4,9 @@
 #include <frc/DriverStation.h>
 #include "rclcpp/rclcpp.hpp"
 
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 namespace robot
 {
 
@@ -12,6 +15,7 @@ namespace robot
                                            enabledNotif(std::bind(&SubsystemManager::enabledLoop, this)),
                                            disabledNotif(std::bind(&SubsystemManager::disabledLoop, this))
     {
+        sysReset = this->create_service<std_srvs::srv::Trigger>("sys/reset", std::bind(&SubsystemManager::serviceReset, this, _1, _2));
     }
 
     void SubsystemManager::registerSubsystems(std::vector<std::shared_ptr<Subsystem>> subsystems)
@@ -34,6 +38,21 @@ namespace robot
             subsystem->reset();
         }
     }
+
+    void SubsystemManager::serviceReset(std::shared_ptr<std_srvs::srv::Trigger::Request> ping, std::shared_ptr<std_srvs::srv::Trigger::Response> pong)
+    {
+        pong->success = true;
+        try{
+            for (std::shared_ptr<Subsystem> subsystem : subsystems)
+            {
+             subsystem->reset();
+            }
+        } catch (std::exception e) {
+            pong->message = e.what();
+            pong->success = false;
+        }
+    }
+
 
     void SubsystemManager::startEnabledLoop()
     {

@@ -7,11 +7,11 @@
 #define DRIVE_LEFT_FOLLOWER 2
 #define DRIVE_RIGHT_MASTER 3
 #define DRIVE_RIGHT_FOLLOWER 4
-#define IMU_ID 1
+#define IMU_ID 0
 
 // Solenoid ID mappings
-#define DRIVE_SHIFT_LOW 2
-#define DRIVE_SHIFT_HIGH 3
+#define DRIVE_SHIFT_LOW 4 //4
+#define DRIVE_SHIFT_HIGH 5 //5
 
 // Which sticks to watch from the driverstation
 #define USER_STICKS {0}
@@ -34,9 +34,9 @@
 #define DRIVE_SHIFT_HIGH_THRESH 8.5 // upper limit of low gear (rad/s)
 
 // IMU covariance matricies (3x3) Row major about x, y, z axes
-#define IMU_ORIENT_COVAR {1, 0, 0, 0, 1, 0, 0, 0, 1} // only show variances of data
-#define IMU_ACCEL_COVAR {1, 0, 0, 0, 1, 0, 0, 0, 1} // only show variances of data
-#define IMU_ANG_VEL_COVAR {1, 0, 0, 0, 1, 0, 0, 0, 1} // only show variances of data
+#define IMU_ORIENT_COVAR {.00000021103, 0, 0, 0, .000000077753, 0, 0, 0, .00000031994} // only show variances of data
+#define IMU_ACCEL_COVAR {.000041837, 0, 0, 0, .00002734, 0, 0, 0, .000065791} // only show variances of data
+#define IMU_ANG_VEL_COVAR {.00000069934, 0, 0, 0, .0000018495, 0, 0, 0, .00000088928} // only show variances of data
 
 // PID constants for left and right transmission velocity control
 #define DRIVE_LEFT_KF 0.0

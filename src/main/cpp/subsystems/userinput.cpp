@@ -20,7 +20,7 @@ namespace robot
         for (auto stick = sticks.begin(); stick != sticks.end(); ++stick)
         {
             stickPubs.push_back(
-                node->create_publisher<sensor_msgs::msg::Joy>("/sticks/stick" + std::to_string(stick->GetPort()), rclcpp::SensorDataQoS())
+                node->create_publisher<sensor_msgs::msg::Joy>("/sticks/stick" + std::to_string(stick->GetPort()), 10)//rclcpp::SensorDataQoS())
             );
         }
     }

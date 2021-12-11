@@ -6,6 +6,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "subsystems/Subsystem.h"
+#include "std_srvs/srv/trigger.hpp"
 
 namespace robot
 {
@@ -25,6 +26,18 @@ namespace robot
          * Commands all susbsystems to undergo a reset.
          **/ 
         void reset();
+
+        /**
+         * Commands all susbsystems to undergo a reset from a ROS service. 
+         * 
+         * @ensures
+         * pong->sucess contains whether the reset occured without fail 
+         * IF !pong->sucsess, THEN pong->message includes the error message from the failing reset
+         * 
+         * @param ping This is empty and you can ignore it, it is merely a requirement of ROS
+         * @param pong This is the responce message with error status
+         **/ 
+        void serviceReset(std::shared_ptr<std_srvs::srv::Trigger::Request> ping, std::shared_ptr<std_srvs::srv::Trigger::Response> pong);
 
         /**
          * starts the subsystem manager thread, and begins updating the subsystems in order. 
@@ -58,6 +71,7 @@ namespace robot
 
         void enabledLoop();
         void disabledLoop();
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr sysReset;
     };
 
 } // namespace robot

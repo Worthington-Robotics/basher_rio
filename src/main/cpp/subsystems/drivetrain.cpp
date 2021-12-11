@@ -39,7 +39,7 @@ namespace robot
         // Create subscribers
         trajectorySub = node->create_subscription<trajectory_msgs::msg::JointTrajectory>("/drive/active_traj", rclcpp::SystemDefaultsQoS(), std::bind(&Drivetrain::trajectoryCallback, this, _1));
         twistSub = node->create_subscription<geometry_msgs::msg::Twist>("/drive/velocity_twist", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::twistCallback, this, _1));
-        stickSub = node->create_subscription<sensor_msgs::msg::Joy>(DRIVE_STICK_TOPIC, rclcpp::SensorDataQoS(), std::bind(&Drivetrain::stickCallback, this, _1));
+        stickSub = node->create_subscription<sensor_msgs::msg::Joy>(DRIVE_STICK_TOPIC, 10/*rclcpp::SensorDataQoS()*/, std::bind(&Drivetrain::stickCallback, this, _1));
 
         transModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/trans_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::transModeCallback, this, _1));
         DriveModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/drive_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::driveModeCallback, this, _1));
@@ -122,10 +122,6 @@ namespace robot
         imuMsg.linear_acceleration.x = 0;
         imuMsg.linear_acceleration.y = 0;
         imuMsg.linear_acceleration.z = 0;
-        imuMsg.orientation.x = 0;
-        imuMsg.orientation.y = 0;
-        imuMsg.orientation.z = 0;
-        imuMsg.orientation.w = 1;
         imuMsg.angular_velocity.x = 0;
         imuMsg.angular_velocity.y = 0;
         imuMsg.angular_velocity.z = 0;
@@ -141,7 +137,29 @@ namespace robot
 
         shiftState = DISABLED;
         driveState = OPEN_LOOP_STICK;
-    }
+
+        //reseting encoders, sensors, and the IMU
+
+        leftMaster->SetSelectedSensorPosition(0);
+        rightMaster->SetSelectedSensorPosition(0);
+
+
+        double orientData[4];
+        imu->Get6dQuaternion(orientData);
+        imuMsg.orientation.w = orientData[0];
+        imuMsg.orientation.x = orientData[1];
+        imuMsg.orientation.y = orientData[2];
+        imuMsg.orientation.z = orientData[3];
+
+        //this calculates the conjugate quaternion which is used to offset the rotation
+        double norm = imuMsg.orientation.w * imuMsg.orientation.w + imuMsg.orientation.x * imuMsg.orientation.x
+        + imuMsg.orientation.y * imuMsg.orientation.y + imuMsg.orientation.z * imuMsg.orientation.z;
+        offsetQuaternion.w = imuMsg.orientation.w / norm;
+        offsetQuaternion.x = -imuMsg.orientation.x / norm;
+        offsetQuaternion.y = -imuMsg.orientation.y / norm;
+        offsetQuaternion.z = -imuMsg.orientation.z / norm;
+        std::cout << offsetQuaternion.w << ", " << offsetQuaternion.x << ", " << offsetQuaternion.y << ", " << offsetQuaternion.z;
+        }
 
     void Drivetrain::onStart()
     {
@@ -172,16 +190,20 @@ namespace robot
         imuMsg.orientation.y = orientData[2];
         imuMsg.orientation.z = orientData[3];
 
+        imuMsg.orientation = hamiltonProduct(offsetQuaternion, imuMsg.orientation);
+
         //Read the current left and right joint states
         wheelState.position = {leftMaster->GetSelectedSensorPosition(), rightMaster->GetSelectedSensorPosition()};
         wheelState.velocity = {leftMaster->GetSelectedSensorVelocity(), rightMaster->GetSelectedSensorVelocity()};
         wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
     }
 
+
+
     // Average the wheel state velocities
     double getFwdVelocity(sensor_msgs::msg::JointState wheelState)
     {
-        return (wheelState.velocity.at(0) + wheelState.velocity.at(0)) / 2.0;
+        return (wheelState.velocity.at(0) + wheelState.velocity.at(1)) / 2.0;
     }
 
     void twistToDemand(const geometry_msgs::msg::Twist twist, double &leftDemand, double &rightDemand)
@@ -201,6 +223,10 @@ namespace robot
     {
         // Read sensors
         updateSensorData();
+        bool button1UserInput = lastStick.buttons.at(1);
+        if(button1UserInput){
+            shiftState = USER_INPUT;
+        }
 
         switch (driveState)
         {
@@ -265,6 +291,7 @@ namespace robot
             shifterDemand = frc::DoubleSolenoid::Value::kOff;
             break;
 
+        case USER_INPUT:
         case VELOCITY_THRESH:
             if (getFwdVelocity(wheelState) > DRIVE_SHIFT_HIGH_THRESH)
             {
@@ -287,6 +314,19 @@ namespace robot
             // set into low gear
             shifterDemand = frc::DoubleSolenoid::Value::kForward;
             break;
+        
+        // case USER_INPUT:
+        //     if (getFwdVelocity(wheelState) > DRIVE_SHIFT_HIGH_THRESH)
+        //     {
+        //         // set into high gear
+        //         shifterDemand = frc::DoubleSolenoid::Value::kReverse;
+        //     }
+        //     else if (getFwdVelocity(wheelState) < DRIVE_SHIFT_LOW_THRESH)
+        //     {
+        //         // set into low gear
+        //         shifterDemand = frc::DoubleSolenoid::Value::kForward;
+        //     }
+        //     break;
 
         default:
             frc::DriverStation::ReportError("Transmissions attempted to enter an illegal mode");
