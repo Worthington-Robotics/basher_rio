@@ -2,7 +2,9 @@
 #include "Constants.h"
 #include <frc/DriverStation.h>
 #include <frc/drive/DifferentialDrive.h>
+#include <frc/geometry/Rotation2d.h>
 #include "subsystems/userinput.h"
+
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -25,6 +27,8 @@ namespace robot
 
         shifter = std::make_shared<frc::DoubleSolenoid>(DRIVE_SHIFT_LOW, DRIVE_SHIFT_HIGH);
 
+        driveOdom = std::make_shared<frc::DifferentialDriveOdometry>(frc::Rotation2d());
+
         configMotors();
 
         reset();
@@ -35,11 +39,13 @@ namespace robot
         // Create sensor data publishers
         imuPub = node->create_publisher<sensor_msgs::msg::Imu>("/drive/imu", rclcpp::SensorDataQoS());
         wheelStatePub = node->create_publisher<sensor_msgs::msg::JointState>("/drive/wheel_state", rclcpp::SensorDataQoS());
+        poseStatePub = node->create_publisher<geometry_msgs::msg::Pose>("/drive/pose", rclcpp::SensorDataQoS());
+        yawPub = node->create_publisher<std_msgs::msg::Float32>("/drive/heading", rclcpp::SensorDataQoS());
 
         // Create subscribers
         trajectorySub = node->create_subscription<trajectory_msgs::msg::JointTrajectory>("/drive/active_traj", rclcpp::SystemDefaultsQoS(), std::bind(&Drivetrain::trajectoryCallback, this, _1));
         twistSub = node->create_subscription<geometry_msgs::msg::Twist>("/drive/velocity_twist", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::twistCallback, this, _1));
-        stickSub = node->create_subscription<sensor_msgs::msg::Joy>(DRIVE_STICK_TOPIC, 10/*rclcpp::SensorDataQoS()*/, std::bind(&Drivetrain::stickCallback, this, _1));
+        stickSub = node->create_subscription<sensor_msgs::msg::Joy>(DRIVE_STICK_TOPIC, rclcpp::SensorDataQoS(), std::bind(&Drivetrain::stickCallback, this, _1));
 
         transModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/trans_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::transModeCallback, this, _1));
         DriveModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/drive_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::driveModeCallback, this, _1));
@@ -66,7 +72,7 @@ namespace robot
         // configure right master falcon
         rightMaster->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
         rightMaster->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
-        rightMaster->SetSensorPhase(true);
+        rightMaster->SetSensorPhase(false);
         rightMaster->SetInverted(true);
         rightMaster->SetNeutralMode(NeutralMode::Brake);
         rightMaster->SelectProfileSlot(0, 0);
@@ -92,7 +98,7 @@ namespace robot
         //configure right follower falcon
         rightFollower->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 255, 0);
         rightFollower->SetStatusFramePeriod(StatusFrameEnhanced::Status_1_General, 255, 0);
-        rightFollower->SetSensorPhase(true);
+        rightFollower->SetSensorPhase(false);
         rightFollower->SetInverted(true);
         rightFollower->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
         rightFollower->EnableVoltageCompensation(true);
@@ -112,6 +118,7 @@ namespace robot
         // TODO reset sensors
 
         // Reset the IMU message and wait for data
+        imu->SetFusedHeading(0);
         imuMsg = sensor_msgs::msg::Imu();
         //set covariances
         imuMsg.orientation_covariance = IMU_ORIENT_COVAR;
@@ -129,13 +136,15 @@ namespace robot
         // build the ramsete controller
         controller = frc::RamseteController();
 
+        //reset the pose
+        driveOdom->ResetPosition(frc::Pose2d(), frc::Rotation2d());
+
         // clear demands and reset time
         leftDemand = rightDemand = 0;
         lastTwistTime = 0;
-
         shifterDemand = frc::DoubleSolenoid::Value::kForward; // default to low gear
 
-        shiftState = DISABLED;
+        shiftState = VELOCITY_THRESH;
         driveState = OPEN_LOOP_STICK;
 
         //reseting encoders, sensors, and the IMU
@@ -158,7 +167,14 @@ namespace robot
         offsetQuaternion.x = -imuMsg.orientation.x / norm;
         offsetQuaternion.y = -imuMsg.orientation.y / norm;
         offsetQuaternion.z = -imuMsg.orientation.z / norm;
-        std::cout << offsetQuaternion.w << ", " << offsetQuaternion.x << ", " << offsetQuaternion.y << ", " << offsetQuaternion.z;
+
+        imuMsg.orientation = hamiltonProduct(offsetQuaternion, imuMsg.orientation);
+
+        poseState.orientation = imuMsg.orientation;
+        poseState.position.x = driveOdom->GetPose().X().value();
+        poseState.position.y = driveOdom->GetPose().Y().value();
+        poseState.position.z = 0;
+        yawMsg.data = 0;
         }
 
     void Drivetrain::onStart()
@@ -192,12 +208,28 @@ namespace robot
 
         imuMsg.orientation = hamiltonProduct(offsetQuaternion, imuMsg.orientation);
 
-        //Read the current left and right joint states
-        wheelState.position = {leftMaster->GetSelectedSensorPosition(), rightMaster->GetSelectedSensorPosition()};
-        wheelState.velocity = {leftMaster->GetSelectedSensorVelocity(), rightMaster->GetSelectedSensorVelocity()};
-        wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
+        //Read the current left and right joint states and adjust them using the shifter state
+        //kReverse is high gear and the *10 is used to convert from ticks / 100ms to m/s
+        //the negitives are to set the sensor phase because I am lazy
+        if(shifterDemand == frc::DoubleSolenoid::kReverse) {
+            wheelState.position = {leftMaster->GetSelectedSensorPosition() / DRIVE_TICKS_PER_METER_HIGH, -rightMaster->GetSelectedSensorPosition() / DRIVE_TICKS_PER_METER_HIGH};
+            wheelState.velocity = {leftMaster->GetSelectedSensorVelocity() / DRIVE_TICKS_PER_METER_HIGH * 10, -rightMaster->GetSelectedSensorVelocity() / DRIVE_TICKS_PER_METER_HIGH * 10};
+            wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
+        } else {
+            wheelState.position = {leftMaster->GetSelectedSensorPosition() / DRIVE_TICKS_PER_METER_LOW, -rightMaster->GetSelectedSensorPosition() / DRIVE_TICKS_PER_METER_LOW};
+            wheelState.velocity = {leftMaster->GetSelectedSensorVelocity() / DRIVE_TICKS_PER_METER_LOW * 10, -rightMaster->GetSelectedSensorVelocity() / DRIVE_TICKS_PER_METER_LOW * 10};
+            wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
+        }
+        double* ypr = (double*)malloc(sizeof(double) * 3);
+        imu->GetYawPitchRoll(ypr);
+        driveOdom -> Update(frc::Rotation2d{units::degree_t(*ypr)}, units::length::meter_t(wheelState.position.at(0)), units::length::meter_t(wheelState.position.at(1)));
+        poseState.orientation = imuMsg.orientation;
+        poseState.position.x = driveOdom->GetPose().X().value();
+        poseState.position.y = driveOdom->GetPose().Y().value();
+        poseState.position.z = 0;
+        yawMsg.data = (*ypr);
+        free(ypr);
     }
-
 
 
     // Average the wheel state velocities
@@ -339,6 +371,8 @@ namespace robot
     {
         imuPub->publish(imuMsg);
         wheelStatePub->publish(wheelState);
+        poseStatePub->publish(poseState);
+        yawPub->publish(yawMsg);
     }
 
     void Drivetrain::trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg)

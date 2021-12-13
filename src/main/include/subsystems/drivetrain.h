@@ -10,13 +10,17 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+#include "frc/kinematics/DifferentialDriveOdometry.h"
+
 #include <geometry_msgs/msg/quaternion.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/int16.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 namespace robot
 {
@@ -188,10 +192,14 @@ namespace robot
         // ROS Publishers
         rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imuPub;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr wheelStatePub;
+        rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr poseStatePub;
+        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr yawPub;
 
         // ROS Messages for publishing
         sensor_msgs::msg::Imu imuMsg;
         sensor_msgs::msg::JointState wheelState;
+        geometry_msgs::msg::Pose poseState;
+        std_msgs::msg::Float32 yawMsg;
 
         // ROS Subscibers
         rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectorySub;
@@ -204,6 +212,7 @@ namespace robot
         sensor_msgs::msg::Joy lastStick;
 
         // underlying controllers
+        std::shared_ptr<frc::DifferentialDriveOdometry> driveOdom;
         frc::RamseteController controller;
 
         // Control states for the DT
@@ -219,9 +228,11 @@ namespace robot
 
         // Offset vars
         geometry_msgs::msg::Quaternion offsetQuaternion;
-        double rollOffset = 0;
-        double pitchOffset = 0;
-        double yawOffset =  0;
+
+        //gyro bits
+        double roll = 0;
+        double pitch = 0;
+        double yaw =  0;
 
     };
 
