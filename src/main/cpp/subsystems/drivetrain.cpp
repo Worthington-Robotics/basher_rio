@@ -220,15 +220,14 @@ namespace robot
             wheelState.velocity = {leftMaster->GetSelectedSensorVelocity() / DRIVE_TICKS_PER_METER_LOW * 10, -rightMaster->GetSelectedSensorVelocity() / DRIVE_TICKS_PER_METER_LOW * 10};
             wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
         }
-        double* ypr = (double*)malloc(sizeof(double) * 3);
-        imu->GetYawPitchRoll(ypr);
-        driveOdom -> Update(frc::Rotation2d{units::degree_t(*ypr)}, units::length::meter_t(wheelState.position.at(0)), units::length::meter_t(wheelState.position.at(1)));
+        double ypr = 0;
+        ypr = imu->GetFusedHeading();
+        driveOdom -> Update(frc::Rotation2d{units::degree_t(ypr)}, units::length::meter_t(wheelState.position.at(0)), units::length::meter_t(wheelState.position.at(1)));
         poseState.orientation = imuMsg.orientation;
         poseState.position.x = driveOdom->GetPose().X().value();
         poseState.position.y = driveOdom->GetPose().Y().value();
         poseState.position.z = 0;
-        yawMsg.data = (*ypr);
-        free(ypr);
+        yawMsg.data = ypr;
     }
 
 
