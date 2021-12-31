@@ -6,8 +6,7 @@
 
 #include <frc/TimedRobot.h>
 #include <frc/DriverStation.h>
-#include "ctre/Phoenix.h"
-#include "RosNode.hpp"
+#include "SubsystemManager.h"
 
 
 class Robot : public frc::TimedRobot {
@@ -27,7 +26,6 @@ class Robot : public frc::TimedRobot {
   void TestInit() override;
   void TestPeriodic() override;
   private:
-  std::shared_ptr<ros::RosNode> node;
-  std::shared_ptr<TalonSRX> left, right;
-  
+
+  std::shared_ptr<robot::SubsystemManager> manager;
 };

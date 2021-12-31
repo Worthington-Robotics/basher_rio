@@ -2,6 +2,7 @@ plugins {
     id "cpp"
     id "google-test-test-suite"
     id "edu.wpi.first.GradleRIO" version "2021.1.2"
+    id "org.frc4145.versiondata" version "1.1.2"
 }
 
 // Define my targets (RoboRIO) and artifacts (deployable files)
@@ -140,3 +141,5 @@ model {
         }
     }
 }
+
+discoverRoborio.dependsOn versionData

@@ -4,49 +4,66 @@
 
 #include "Robot.h"
 #include <iostream>
+#include "subsystems/drivetrain.h"
+#include "subsystems/userinput.h"
+#include "Constants.h"
 
 void Robot::RobotInit()
 {
-  frc::DriverStation::GetInstance().ReportWarning("Starting ROS!");
+    rclcpp::init(0, NULL);
 
-  rclcpp::init(0, NULL);
+    frc::DriverStation::GetInstance().ReportWarning("ROS Sucessfully Init!");
 
-  frc::DriverStation::GetInstance().ReportWarning("Ros INIT!");
+    // construct subsystems
+    auto drive = std::make_shared<robot::Drivetrain>();
+    auto sticks = std::make_shared<robot::UserInput>();
+    sticks->registerSticks(USER_STICKS); //  register which joystick IDs to read
 
-  node = std::make_shared<ros::RosNode>();
+    // intialize all subsystems here
+    manager = std::make_shared<robot::SubsystemManager>();
+    manager->registerSubsystems(std::vector<std::shared_ptr<robot::Subsystem>>{
+        drive,
+        sticks});
 
-  left = std::make_shared<TalonSRX>(1);
-  right = std::make_shared<TalonSRX>(3);
+    frc::DriverStation::GetInstance().ReportWarning("Robot Code Initialized");
 }
 
 void Robot::RobotPeriodic()
 {
-  //std::cout << "spinning" << std::endl;
-  rclcpp::spin_some(node);
+    //std::cout << "spinning" << std::endl;
 }
 
-void Robot::AutonomousInit() {}
+void Robot::AutonomousInit()
+{
+    manager->stopDisabledLoop();
+    manager->startEnabledLoop();
+}
 void Robot::AutonomousPeriodic() {}
 
-void Robot::TeleopInit() {}
-void Robot::TeleopPeriodic()
+void Robot::TeleopInit()
 {
-  node->publish();
-  double leftData, rightData;
-  node->getNewData(leftData, rightData);
-  left->Set(ControlMode::PercentOutput, leftData);
-  right->Set(ControlMode::PercentOutput, rightData);
+    manager->stopDisabledLoop();
+    manager->startEnabledLoop();
 }
+void Robot::TeleopPeriodic() {}
 
-void Robot::DisabledInit() {}
+void Robot::DisabledInit()
+{
+    manager->stopEnabledLoop();
+    manager->startDisabledLoop();
+}
 void Robot::DisabledPeriodic() {}
 
-void Robot::TestInit() {}
+void Robot::TestInit()
+{
+    manager->stopDisabledLoop();
+    manager->startEnabledLoop();
+}
 void Robot::TestPeriodic() {}
 
 #ifndef RUNNING_FRC_TESTS
 int main()
 {
-  return frc::StartRobot<Robot>();
+    return frc::StartRobot<Robot>();
 }
 #endif
