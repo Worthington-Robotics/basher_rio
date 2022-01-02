@@ -92,6 +92,11 @@ namespace robot
 
     void SubsystemManager::disabledLoop(){
         rclcpp::spin_some(this->shared_from_this());
+        //frc::DriverStation::ReportWarning("Running onloop iteration");
+        for (std::shared_ptr<Subsystem> subsystem : subsystems)
+        {
+            subsystem->publishData();
+        }
     }
 
 } // namespace robot

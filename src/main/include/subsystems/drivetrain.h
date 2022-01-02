@@ -9,6 +9,7 @@
 #include <frc/kinematics/SwerveDriveKinematics.h>
 #include <frc/kinematics/ChassisSpeeds.h>
 #include <frc/geometry/Rotation2d.h>
+#include "subsystems/SModule.h"
 
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -89,19 +90,13 @@ namespace robot
         void driveModeCallback(const std_msgs::msg::Int16 msg);
 
     private:
-        /**
-         * Configure the associated motor controllers with their settings as specified in constants
-         **/ 
-        void configMotors();
 
         void updateSensorData();
 
         frc::ChassisSpeeds twistDrive(const geometry_msgs::msg::Twist);
 
         //IO devices
-        std::shared_ptr<TalonFX> frontLeftDrive, frontLeftAngle, frontRightDrive, frontRightAngle,
-                                 rearLeftDrive, rearLeftAngle, rearRightDrive, rearRightAngle;
-        std::shared_ptr<CANCoder> frontLeftEncod, frontRightEncod, rearLeftEncod, rearRightEncod;
+        std::shared_ptr<SModule> frontRMod, frontLMod, rearRMod, rearLMod;
         std::shared_ptr<PigeonIMU> imu;
 
         // ROS Publishers

@@ -15,25 +15,23 @@ namespace robot
 
     Drivetrain::Drivetrain()
     {
-        frontLeftAngle = std::make_shared<TalonFX>(DRIVE_FL_ANGLE);
-        frontLeftDrive = std::make_shared<TalonFX>(DRIVE_FL_DRIVE);
-        frontLeftEncod = std::make_shared<CANCoder>(DRIVE_FL_ENCOD);
+        frontRMod = std::make_shared<SModule>(DRIVE_FR_DRIVE, DRIVE_FR_ANGLE, DRIVE_FR_ENCOD, FR_ABS_OFFSET,
+        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+        frontRMod->setInvertDrive(true);
 
-        frontRightAngle = std::make_shared<TalonFX>(DRIVE_FR_ANGLE);
-        frontRightDrive = std::make_shared<TalonFX>(DRIVE_FR_DRIVE);
-        frontRightEncod = std::make_shared<CANCoder>(DRIVE_FR_ENCOD);
+        frontLMod = std::make_shared<SModule>(DRIVE_FL_DRIVE, DRIVE_FL_ANGLE, DRIVE_FL_ENCOD, FL_ABS_OFFSET,
+        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+        frontLMod->setInvertDrive(true);
 
-        rearLeftAngle = std::make_shared<TalonFX>(DRIVE_RL_ANGLE);
-        rearLeftDrive = std::make_shared<TalonFX>(DRIVE_RL_DRIVE);
-        rearLeftEncod = std::make_shared<CANCoder>(DRIVE_RL_ENCOD);
+        rearRMod = std::make_shared<SModule>(DRIVE_RR_DRIVE, DRIVE_RR_ANGLE, DRIVE_RR_ENCOD, RR_ABS_OFFSET,
+        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+        rearRMod->setInvertDrive(true);
 
-        rearRightAngle = std::make_shared<TalonFX>(DRIVE_RR_ANGLE);
-        rearRightDrive = std::make_shared<TalonFX>(DRIVE_RR_DRIVE);
-        rearRightEncod = std::make_shared<CANCoder>(DRIVE_RR_ENCOD);
+        rearLMod = std::make_shared<SModule>(DRIVE_RL_DRIVE, DRIVE_RL_ANGLE, DRIVE_RL_ENCOD, RL_ABS_OFFSET,
+        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+        rearLMod->setInvertDrive(true);
 
         imu = std::make_shared<PigeonIMU>(IMU_ID);
-
-        configMotors();
 
         reset();
     }
@@ -52,152 +50,6 @@ namespace robot
         DriveModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/drive_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::driveModeCallback, this, _1));
     }
 
-    void Drivetrain::configMotors()
-    {
-        // Configure front left drive falcon
-        frontLeftDrive->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
-        frontLeftDrive->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
-        frontLeftDrive->SetSensorPhase(true);
-        frontLeftDrive->SetInverted(true);
-        frontLeftDrive->SetNeutralMode(NeutralMode::Brake);
-        frontLeftDrive->SelectProfileSlot(0, 0);
-        frontLeftDrive->Config_kF(0, DRIVE_LEFT_KF, 0);
-        frontLeftDrive->Config_kP(0, DRIVE_LEFT_KP, 0);
-        frontLeftDrive->Config_kI(0, DRIVE_LEFT_KI, 0);
-        frontLeftDrive->Config_kD(0, DRIVE_LEFT_KD, 0);
-        frontLeftDrive->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        frontLeftDrive->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        frontLeftDrive->EnableVoltageCompensation(true);
-        frontLeftDrive->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-
-        // Configure front right drive falcon
-        frontRightDrive->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
-        frontRightDrive->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
-        frontRightDrive->SetSensorPhase(true);
-        frontRightDrive->SetInverted(true);
-        frontRightDrive->SetNeutralMode(NeutralMode::Brake);
-        frontRightDrive->SelectProfileSlot(0, 0);
-        frontRightDrive->Config_kF(0, DRIVE_LEFT_KF, 0);
-        frontRightDrive->Config_kP(0, DRIVE_LEFT_KP, 0);
-        frontRightDrive->Config_kI(0, DRIVE_LEFT_KI, 0);
-        frontRightDrive->Config_kD(0, DRIVE_LEFT_KD, 0);
-        frontRightDrive->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        frontRightDrive->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        frontRightDrive->EnableVoltageCompensation(true);
-        frontRightDrive->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-
-        // Configure rear left drive falcon
-        rearLeftDrive->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
-        rearLeftDrive->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
-        rearLeftDrive->SetSensorPhase(true);
-        rearLeftDrive->SetInverted(true);
-        rearLeftDrive->SetNeutralMode(NeutralMode::Brake);
-        rearLeftDrive->SelectProfileSlot(0, 0);
-        rearLeftDrive->Config_kF(0, DRIVE_LEFT_KF, 0);
-        rearLeftDrive->Config_kP(0, DRIVE_LEFT_KP, 0);
-        rearLeftDrive->Config_kI(0, DRIVE_LEFT_KI, 0);
-        rearLeftDrive->Config_kD(0, DRIVE_LEFT_KD, 0);
-        rearLeftDrive->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        rearLeftDrive->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        rearLeftDrive->EnableVoltageCompensation(true);
-        rearLeftDrive->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-
-        // Configure rear right drive falcon
-        rearRightDrive->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
-        rearRightDrive->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
-        rearRightDrive->SetSensorPhase(true);
-        rearRightDrive->SetInverted(true);
-        rearRightDrive->SetNeutralMode(NeutralMode::Brake);
-        rearRightDrive->SelectProfileSlot(0, 0);
-        rearRightDrive->Config_kF(0, DRIVE_LEFT_KF, 0);
-        rearRightDrive->Config_kP(0, DRIVE_LEFT_KP, 0);
-        rearRightDrive->Config_kI(0, DRIVE_LEFT_KI, 0);
-        rearRightDrive->Config_kD(0, DRIVE_LEFT_KD, 0);
-        rearRightDrive->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        rearRightDrive->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        rearRightDrive->EnableVoltageCompensation(true);
-        rearRightDrive->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-
-        // Configure front left angle falcon
-        frontLeftEncod->SetStatusFramePeriod(CANCoderStatusFrame::CANCoderStatusFrame_SensorData, 5, 0);
-        frontLeftEncod->ConfigSensorDirection(true, 0);
-
-        frontLeftAngle->ConfigRemoteFeedbackFilter(DRIVE_FL_ENCOD, RemoteSensorSource::RemoteSensorSource_CANCoder, 0, 0);
-        frontLeftAngle->ConfigSelectedFeedbackSensor(FeedbackDevice::RemoteSensor0);
-        frontLeftAngle->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 255, 0);
-        frontLeftAngle->SetSensorPhase(true);
-        frontLeftAngle->SetInverted(true);
-        frontLeftAngle->SetNeutralMode(NeutralMode::Brake);
-        frontLeftAngle->SelectProfileSlot(0, 0);
-        frontLeftAngle->Config_kF(0, DRIVE_LEFT_KF, 0);
-        frontLeftAngle->Config_kP(0, DRIVE_LEFT_KP, 0);
-        frontLeftAngle->Config_kI(0, DRIVE_LEFT_KI, 0);
-        frontLeftAngle->Config_kD(0, DRIVE_LEFT_KD, 0);
-        frontLeftAngle->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        frontLeftAngle->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        frontLeftAngle->EnableVoltageCompensation(true);
-        frontLeftAngle->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-
-        // Configure front right angle falcon
-        frontRightEncod->SetStatusFramePeriod(CANCoderStatusFrame::CANCoderStatusFrame_SensorData, 5, 0);
-        frontRightEncod->ConfigSensorDirection(true, 0);
-
-        frontRightAngle->ConfigRemoteFeedbackFilter(DRIVE_FR_ENCOD, RemoteSensorSource::RemoteSensorSource_CANCoder, 0, 0);
-        frontRightAngle->ConfigSelectedFeedbackSensor(FeedbackDevice::RemoteSensor0);
-        frontRightAngle->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 255, 0);
-        frontRightAngle->SetSensorPhase(true);
-        frontRightAngle->SetInverted(true);
-        frontRightAngle->SetNeutralMode(NeutralMode::Brake);
-        frontRightAngle->SelectProfileSlot(0, 0);
-        frontRightAngle->Config_kF(0, DRIVE_LEFT_KF, 0);
-        frontRightAngle->Config_kP(0, DRIVE_LEFT_KP, 0);
-        frontRightAngle->Config_kI(0, DRIVE_LEFT_KI, 0);
-        frontRightAngle->Config_kD(0, DRIVE_LEFT_KD, 0);
-        frontRightAngle->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        frontRightAngle->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        frontRightAngle->EnableVoltageCompensation(true);
-        frontRightAngle->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-
-        // Configure rear left angle falcon
-        rearLeftEncod->SetStatusFramePeriod(CANCoderStatusFrame::CANCoderStatusFrame_SensorData, 5, 0);
-        rearLeftEncod->ConfigSensorDirection(true, 0);
-
-        rearLeftAngle->ConfigRemoteFeedbackFilter(DRIVE_RL_ENCOD, RemoteSensorSource::RemoteSensorSource_CANCoder, 0, 0);
-        rearLeftAngle->ConfigSelectedFeedbackSensor(FeedbackDevice::RemoteSensor0);
-        rearLeftAngle->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
-        rearLeftAngle->SetSensorPhase(true);
-        rearLeftAngle->SetInverted(true);
-        rearLeftAngle->SetNeutralMode(NeutralMode::Brake);
-        rearLeftAngle->SelectProfileSlot(0, 0);
-        rearLeftAngle->Config_kF(0, DRIVE_LEFT_KF, 0);
-        rearLeftAngle->Config_kP(0, DRIVE_LEFT_KP, 0);
-        rearLeftAngle->Config_kI(0, DRIVE_LEFT_KI, 0);
-        rearLeftAngle->Config_kD(0, DRIVE_LEFT_KD, 0);
-        rearLeftAngle->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        rearLeftAngle->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        rearLeftAngle->EnableVoltageCompensation(true);
-        rearLeftAngle->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-
-        // Configure rear right angle falcon
-        rearRightEncod->SetStatusFramePeriod(CANCoderStatusFrame::CANCoderStatusFrame_SensorData, 5, 0);
-        rearRightEncod->ConfigSensorDirection(true, 0);
-
-        rearRightAngle->ConfigRemoteFeedbackFilter(DRIVE_RR_ENCOD, RemoteSensorSource::RemoteSensorSource_CANCoder, 0, 0);
-        rearRightAngle->ConfigSelectedFeedbackSensor(FeedbackDevice::RemoteSensor0);
-        rearRightAngle->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
-        rearRightAngle->SetSensorPhase(true);
-        rearRightAngle->SetInverted(true);
-        rearRightAngle->SetNeutralMode(NeutralMode::Brake);
-        rearRightAngle->SelectProfileSlot(0, 0);
-        rearRightAngle->Config_kF(0, DRIVE_LEFT_KF, 0);
-        rearRightAngle->Config_kP(0, DRIVE_LEFT_KP, 0);
-        rearRightAngle->Config_kI(0, DRIVE_LEFT_KI, 0);
-        rearRightAngle->Config_kD(0, DRIVE_LEFT_KD, 0);
-        rearRightAngle->Config_IntegralZone(0, DRIVE_LEFT_IACCUM, 0);
-        rearRightAngle->ConfigVoltageCompSaturation(DRIVE_VCOMP_VOLTAGE, 0);
-        rearRightAngle->EnableVoltageCompensation(true);
-        rearRightAngle->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-    }
 
     void Drivetrain::reset()
     {
@@ -239,6 +91,11 @@ namespace robot
         lastTwistTime = 0;
 
         driveState = OPEN_LOOP_STICK;
+
+        frontRMod->reset();
+        frontLMod->reset();
+        rearRMod->reset();
+        rearLMod->reset();
     }
 
     void Drivetrain::onStart()
@@ -247,10 +104,6 @@ namespace robot
 
     void Drivetrain::updateSensorData()
     {
-        frc::SmartDashboard::PutNumber("Drive/Front/Left/Angle", frontLeftEncod->GetAbsolutePosition());
-        frc::SmartDashboard::PutNumber("Drive/Front/Right/Angle", frontRightEncod->GetAbsolutePosition());
-        frc::SmartDashboard::PutNumber("Drive/Rear/Left/Angle", rearLeftEncod->GetAbsolutePosition());
-        frc::SmartDashboard::PutNumber("Drive/Rear/Right/Angle", rearRightEncod->GetAbsolutePosition());
         //frc::DriverStation::ReportWarning("Updating drive sensor data");
         // read the current IMU state
         int16_t accelData[3];
@@ -304,7 +157,8 @@ namespace robot
         double xSpeed = twist.linear.x;
         double ySpeed = twist.linear.y;
         double zTurn = twist.angular.z;
-        frc::ChassisSpeeds speeds = frc::ChassisSpeeds::FromFieldRelativeSpeeds(units::meters_per_second_t{xSpeed}, units::meters_per_second_t{ySpeed}, units::radians_per_second_t{zTurn}, frc::Rotation2d{units::degree_t{imu->GetFusedHeading()}});
+        frc::ChassisSpeeds speeds = frc::ChassisSpeeds::FromFieldRelativeSpeeds(units::meters_per_second_t{xSpeed}, units::meters_per_second_t{ySpeed}, units::radians_per_second_t{zTurn}, frc::Rotation2d{units::degree_t{-imu->GetFusedHeading()}});
+        //frc::ChassisSpeeds speeds = frc::ChassisSpeeds{units::meters_per_second_t{xSpeed}, units::meters_per_second_t{ySpeed}, units::radians_per_second_t{zTurn}};
         return speeds;
     }
 
@@ -327,8 +181,8 @@ namespace robot
                 std::cout << "joyData " << joyData.at(0) << " " << joyData.at(1) << std::endl;
 
                 auto stickTwist = geometry_msgs::msg::Twist();
-                stickTwist.linear.x = joyData.at(0);
-                stickTwist.linear.y = joyData.at(1);
+                stickTwist.linear.x = joyData.at(1);
+                stickTwist.linear.y = joyData.at(0);
                 stickTwist.angular.z = joyData.at(2);
                 // convert to demands
                 //arcadeDrive(stickTwist, leftDemand, rightDemand);
@@ -365,24 +219,31 @@ namespace robot
             speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
         }
             auto [fr, fl, rr, rl] = sKinematics.ToSwerveModuleStates(speed);
-            frontLeftAngle->Set(ControlMode::Position, (fl.angle.Degrees().to<double>() + FL_ABS_OFFSET + 360 % 360) * TICKS_PER_DEGREE);
-            frontLeftDrive->Set(ControlMode::PercentOutput, fl.speed.to<double>());
-            frontRightAngle->Set(ControlMode::Position, (fr.angle.Degrees().to<double>() + FR_ABS_OFFSET + 360 % 360) * TICKS_PER_DEGREE);
-            frontRightDrive->Set(ControlMode::PercentOutput, fr.speed.to<double>());
-            rearLeftAngle->Set(ControlMode::Position, (rl.angle.Degrees().to<double>() + RL_ABS_OFFSET + 360 % 360) * TICKS_PER_DEGREE);
-            rearLeftDrive->Set(ControlMode::PercentOutput, rl.speed.to<double>());
-            rearRightAngle->Set(ControlMode::Position, (rr.angle.Degrees().to<double>() + RR_ABS_OFFSET + 360 % 360) * TICKS_PER_DEGREE);
-            rearRightDrive->Set(ControlMode::PercentOutput, rr.speed.to<double>());
-            frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleSet", fl.angle.Degrees().to<double>() + FL_ABS_OFFSET + 360 % 360);
-            frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleSet", fr.angle.Degrees().to<double>() + FR_ABS_OFFSET + 360 % 360);
-            frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleSet", rl.angle.Degrees().to<double>() + RL_ABS_OFFSET + 360 % 360);
-            frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleSet", rr.angle.Degrees().to<double>() + RR_ABS_OFFSET + 360 % 360);
+            frc::SmartDashboard::PutNumber("Drive/Front/Left/SetAngle", fl.angle.Degrees().to<double>());
+            frc::SmartDashboard::PutNumber("Drive/Front/Right/SetAngle", fr.angle.Degrees().to<double>());
+            frc::SmartDashboard::PutNumber("Drive/Rear/Left/SetAngle", rl.angle.Degrees().to<double>());
+            frc::SmartDashboard::PutNumber("Drive/Rear/Right/SetAngle", rr.angle.Degrees().to<double>());
+            frontLMod->setMotors(fl);
+            frontRMod->setMotors(fr);
+            rearLMod->setMotors(rl);
+            rearRMod->setMotors(rr);
     }
 
     void Drivetrain::publishData()
     {
         imuPub->publish(imuMsg);
         wheelStatePub->publish(wheelState);
+
+        frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleABS", frontLMod->getData().encAbs);
+        frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleABS", frontRMod->getData().encAbs);
+        frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleABS", rearLMod->getData().encAbs);
+        frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleABS", rearRMod->getData().encAbs);
+
+        
+        frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleRel", frontLMod->getData().angleRel);
+        frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleRel", frontRMod->getData().angleRel);
+        frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleRel", rearRMod->getData().angleRel);
+        frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleRel", rearLMod->getData().angleRel);
     }
 
     void Drivetrain::trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg)

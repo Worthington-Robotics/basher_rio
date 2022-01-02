@@ -30,7 +30,7 @@
 #define USER_STICKS {0}
 
 #define DRIVE_STICK_TOPIC "/sticks/stick0"
-#define DRIVE_STICK_SCALAR {0.5, 1, 1, 1}
+#define DRIVE_STICK_SCALAR {1, -1, 1, 1}
 #define DRIVE_STICK_DEADBAND 0.15
 #define DRIVE_STICK_POWER 2
 
@@ -53,7 +53,7 @@
 
 // PID constants for left and right transmission velocity control
 #define DRIVE_LEFT_KF 0
-#define DRIVE_LEFT_KP .1
+#define DRIVE_LEFT_KP 2.5
 #define DRIVE_LEFT_KI 0.0
 #define DRIVE_LEFT_KD 0
 #define DRIVE_LEFT_IACCUM 300
@@ -68,10 +68,14 @@
 
 // physical constants
 #define DRIVE_TRACK_WIDTH 0.5 // (meters)
-#define TICKS_PER_DEGREE 4096/360
+#define TICKS_PER_DEGREE 2048.0/360
 #define DRIVE_CPR_TO_RAD
 
-#define FR_ABS_OFFSET 67.2
-#define FL_ABS_OFFSET 94.3
-#define RR_ABS_OFFSET 326.2
-#define RL_ABS_OFFSET 188.8
+#define SWERVE_ANGLE_GEARING 5 / 64
+#define SWERVE_ANGLE_POS_TTR 2 * 3.14159 / 2048.0 * SWERVE_ANGLE_GEARING
+#define SWERVE_ANGLE_VEL_TTR SWERVE_ANGLE_POS_TTR * 10
+
+#define FR_ABS_OFFSET 291.8
+#define FL_ABS_OFFSET 265.6
+#define RR_ABS_OFFSET 34.2
+#define RL_ABS_OFFSET 350.8
