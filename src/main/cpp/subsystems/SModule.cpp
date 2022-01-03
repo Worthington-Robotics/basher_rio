@@ -4,6 +4,7 @@
 #include <units/angle.h>
 #include <units/velocity.h>
 #include <frc/geometry/Rotation2d.h>
+#include <iostream>
 
 namespace robot
 {
@@ -43,6 +44,10 @@ namespace robot
         encod->ConfigSensorDirection(false, 0);
         encod->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Unsigned_0_to_360);
         encod->ConfigMagnetOffset(offset);
+        bootPos = std::fmod((encod->GetAbsolutePosition() / 180.0 * M_PI + 2.0 * M_PI), (2 * M_PI));
+        std::cout << bootPos << std::endl;
+        double angleOffset = bootPos / SWERVE_ANGLE_POS_TTR;
+        std::cout << angleOffset << std::endl;
 
         angle->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
         angle->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
@@ -54,12 +59,12 @@ namespace robot
         angle->Config_kP(0, aValues.p, 0);
         angle->Config_kI(0, aValues.i, 0);
         angle->Config_kD(0, aValues.d, 0);
+        angle->SelectProfileSlot(0, 0);
         angle->Config_IntegralZone(0, 300, 0);
         angle->ConfigVoltageCompSaturation(11, 0);
         angle->EnableVoltageCompensation(true);
         angle->ConfigStatorCurrentLimit(StatorCurrentLimitConfiguration(true, 40, 0, 0.02));
-        bootPos = std::fmod((encod->GetAbsolutePosition() / 180 * M_PI + 2 * M_PI), (2 * M_PI));
-        angle->SetSelectedSensorPosition(bootPos / SWERVE_ANGLE_POS_TTR, 0, 0);
+        angle->SetSelectedSensorPosition(-angleOffset, 0);
     }
 
     void SModule::setInvertDrive(bool invert){
@@ -94,7 +99,7 @@ namespace robot
     frc::SwerveModuleState SModule::getState()
     {
         //(ticks / 100ms) / (ticks / revolution) * (Circumfrence [Diameter * Pi] / revolution) * (1s / 100ms) / (1m / 39.37in)
-        return frc::SwerveModuleState{units::feet_per_second_t{drive->GetSelectedSensorVelocity() / 2048 * 4 * M_PI * 10 / 39.37},
+        return frc::SwerveModuleState{units::meters_per_second_t{drive->GetSelectedSensorVelocity() / 2048 * 4 * M_PI * 10 / 39.37 / 6.12},
          frc::Rotation2d{units::degree_t{angle->GetSelectedSensorPosition() / TICKS_PER_DEGREE / (64 / 5)}}};
     }
 

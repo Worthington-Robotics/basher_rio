@@ -129,7 +129,7 @@ namespace robot
         frc::Translation2d sRearLeft{-0.65_m, -0.65_m};
         frc::SwerveDriveKinematics<4> sKinematics {sFrontRight, sFrontLeft, sRearRight, sRearLeft};
         frc::SwerveDriveOdometry<4> sOdom {sKinematics, frc::Rotation2d{units::degree_t{0}}};
-        std::array<frc::SwerveModuleState, 4> moduleStates; //fl, fr, rl, rr
+        std::array<frc::SwerveModuleState, 4> moduleStates; //fr, fl, rr, rl
 
         bool DEBUG = false;
 
