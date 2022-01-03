@@ -82,9 +82,6 @@ namespace robot
         imuMsg.angular_velocity.y = 0;
         imuMsg.angular_velocity.z = 0;
 
-        // build the ramsete controller
-        controller = frc::RamseteController();
-
         // clear demands and reset time
         leftDemand = rightDemand = 0;
         lastTwistTime = 0;
@@ -253,6 +250,7 @@ namespace robot
     {
         imuPub->publish(imuMsg);
         wheelStatePub->publish(wheelState);
+
         if(DEBUG){
             frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleABS", frontLMod->getData().encAbs);
             frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleABS", frontRMod->getData().encAbs);
@@ -290,6 +288,11 @@ namespace robot
     {
         std::cout << "changing drivetrain to mode " << msg.data << std::endl;
         driveState = static_cast<ControlState>(msg.data);
+    }
+
+    void Drivetrain::enableDebug(bool debugEnable){
+        frc::DriverStation::ReportWarning("Driverstation setting debugEnabled");
+        DEBUG = debugEnable;
     }
 
 } // namespace robot

@@ -2,8 +2,6 @@
 #include <units/time.h>
 #include <units/velocity.h>
 
-#define DEBUG false
-
 // Canbus ID mappings
 #define DRIVE_FR_DRIVE 1
 #define DRIVE_FR_ANGLE 2

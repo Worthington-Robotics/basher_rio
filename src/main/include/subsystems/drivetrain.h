@@ -64,6 +64,8 @@ namespace robot
          **/
         void publishData() override;
 
+        void enableDebug(bool debug) override;
+
         /**
          * Callbacks for ROS Subscribers 
          **/
@@ -119,13 +121,13 @@ namespace robot
         sensor_msgs::msg::Joy lastStick;
 
         // underlying controllers
-        frc::RamseteController controller;
         frc::Translation2d sFrontRight{0.65_m, 0.65_m};
         frc::Translation2d sFrontLeft{0.65_m, -0.65_m};
         frc::Translation2d sRearRight{-0.65_m, 0.65_m};
         frc::Translation2d sRearLeft{-0.65_m, -0.65_m};
         frc::SwerveDriveKinematics<4> sKinematics {sFrontRight, sFrontLeft, sRearRight, sRearLeft};
 
+        bool DEBUG = false;
 
         // Control states for the DT
         ControlState driveState;

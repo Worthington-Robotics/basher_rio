@@ -35,7 +35,7 @@ namespace robot {
         /**
          * Overide this function to recieve information on when debug mode is enabled
          **/ 
-        void enableDebug(bool debugEnable){
+        virtual void enableDebug(bool debugEnable){
             frc::DriverStation::ReportWarning("At least one subsystem does not override enableDebug");
         }
 

@@ -44,30 +44,36 @@ namespace robot
     void SubsystemManager::serviceReset(std::shared_ptr<std_srvs::srv::Trigger::Request> ping, std::shared_ptr<std_srvs::srv::Trigger::Response> pong)
     {
         pong->success = true;
-        try{
+        try
+        {
             for (std::shared_ptr<Subsystem> subsystem : subsystems)
             {
-             subsystem->reset();
+                subsystem->reset();
             }
-        } catch (std::exception e) {
+        }
+        catch (std::exception e)
+        {
             pong->message = e.what();
             pong->success = false;
         }
     }
 
-    void SubsystemManager::serviceDebug(std::shared_ptr<std_srvs::srv::SetBool::Request> ping, std::shared_ptr<std_srvs::srv::SetBool::Response> pong){
+    void SubsystemManager::serviceDebug(std::shared_ptr<std_srvs::srv::SetBool::Request> ping, std::shared_ptr<std_srvs::srv::SetBool::Response> pong)
+    {
         pong->success = true;
-        try{
+        try
+        {
             for (std::shared_ptr<Subsystem> subsystem : subsystems)
             {
-             subsystem->enableDebug(ping->data);
+                subsystem->enableDebug(ping->data);
             }
-        } catch (std::exception e) {
+        }
+        catch (std::exception e)
+        {
             pong->message = e.what();
             pong->success = false;
         }
     }
-
 
     void SubsystemManager::startEnabledLoop()
     {
@@ -80,15 +86,15 @@ namespace robot
         enabledNotif.Stop();
     }
 
-
-    void SubsystemManager::startDisabledLoop(){
+    void SubsystemManager::startDisabledLoop()
+    {
         disabledNotif.StartPeriodic(10_ms);
     }
 
-    void SubsystemManager::stopDisabledLoop(){
+    void SubsystemManager::stopDisabledLoop()
+    {
         disabledNotif.Stop();
     }
-
 
     void SubsystemManager::enabledLoop()
     {
@@ -117,15 +123,24 @@ namespace robot
             }
 
             rclcpp::spin_some(this->shared_from_this());
-        } catch(const std::exception & e){
+        }
+        catch (const std::exception &e)
+        {
             frc::DriverStation::ReportError(e.what());
-        } catch ( ... ){
+        }
+        catch (...)
+        {
             frc::DriverStation::ReportError("Looper Thread died with unknown exception");
         }
     }
 
-    void SubsystemManager::disabledLoop(){
+    void SubsystemManager::disabledLoop()
+    {
         rclcpp::spin_some(this->shared_from_this());
+        for (std::shared_ptr<Subsystem> subsystem : subsystems)
+        {
+            subsystem->publishData();
+        }
     }
 
 } // namespace robot
