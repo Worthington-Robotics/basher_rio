@@ -45,9 +45,9 @@ namespace robot
         encod->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Unsigned_0_to_360);
         encod->ConfigMagnetOffset(offset);
         bootPos = std::fmod((encod->GetAbsolutePosition() / 180.0 * M_PI + 2.0 * M_PI), (2 * M_PI));
-        std::cout << bootPos << std::endl;
+        //std::cout << bootPos << std::endl;
         double angleOffset = bootPos / SWERVE_ANGLE_POS_TTR;
-        std::cout << angleOffset << std::endl;
+        //std::cout << angleOffset << std::endl;
 
         angle->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor, 0, 100);
         angle->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 5, 0);
