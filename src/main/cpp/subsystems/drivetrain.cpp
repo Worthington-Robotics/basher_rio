@@ -16,19 +16,19 @@ namespace robot
     Drivetrain::Drivetrain()
     {
         frontRMod = std::make_shared<SModule>(DRIVE_FR_DRIVE, DRIVE_FR_ANGLE, DRIVE_FR_ENCOD, FR_ABS_OFFSET,
-        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+                                              PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
         frontRMod->setInvertDrive(true);
 
         frontLMod = std::make_shared<SModule>(DRIVE_FL_DRIVE, DRIVE_FL_ANGLE, DRIVE_FL_ENCOD, FL_ABS_OFFSET,
-        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+                                              PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
         frontLMod->setInvertDrive(true);
 
         rearRMod = std::make_shared<SModule>(DRIVE_RR_DRIVE, DRIVE_RR_ANGLE, DRIVE_RR_ENCOD, RR_ABS_OFFSET,
-        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+                                             PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
         rearRMod->setInvertDrive(true);
 
         rearLMod = std::make_shared<SModule>(DRIVE_RL_DRIVE, DRIVE_RL_ANGLE, DRIVE_RL_ENCOD, RL_ABS_OFFSET,
-        PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
+                                             PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
         rearLMod->setInvertDrive(true);
 
         imu = std::make_shared<PigeonIMU>(IMU_ID);
@@ -49,7 +49,6 @@ namespace robot
 
         DriveModeSub = node->create_subscription<std_msgs::msg::Int16>("/drive/drive_mode", rclcpp::SensorDataQoS(), std::bind(&Drivetrain::driveModeCallback, this, _1));
     }
-
 
     void Drivetrain::reset()
     {
@@ -90,7 +89,7 @@ namespace robot
         leftDemand = rightDemand = 0;
         lastTwistTime = 0;
 
-        driveState = OPEN_LOOP_STICK;
+        driveState = OPEN_LOOP_FIELD_REL;
 
         frontRMod->reset();
         frontLMod->reset();
@@ -127,7 +126,7 @@ namespace robot
         imuMsg.orientation.y = orientData[2];
         imuMsg.orientation.z = orientData[3];
 
-        //Read the current left and right joint states 
+        //Read the current left and right joint states
         //TODO FIX
         // wheelState.position = {f->GetSelectedSensorPosition(), rightMaster->GetSelectedSensorPosition()};
         // wheelState.velocity = {leftMaster->GetSelectedSensorVelocity(), rightMaster->GetSelectedSensorVelocity()};
@@ -140,25 +139,28 @@ namespace robot
         return (wheelState.velocity.at(0) + wheelState.velocity.at(0)) / 2.0;
     }
 
-    void twistToDemand(const geometry_msgs::msg::Twist twist, double &leftDemand, double &rightDemand)
+    frc::ChassisSpeeds Drivetrain::twistDrive(const geometry_msgs::msg::Twist &twist, const frc::Rotation2d &orientation)
     {
-        leftDemand = twist.linear.x - DRIVE_TRACK_WIDTH / 2 * twist.angular.z;
-        rightDemand = twist.linear.x + DRIVE_TRACK_WIDTH / 2 * twist.angular.z;
-    }
-
-    void arcadeDrive (const geometry_msgs::msg::Twist twist, double &leftDemand, double &rightDemand){
-        const double maxInput = std::max(std::max(std::abs(twist.linear.x - twist.angular.z), std::abs(twist.linear.x + twist.angular.z)), 1.0);
-
-        rightDemand = (twist.linear.x + twist.angular.z) / maxInput;
-        leftDemand = (twist.linear.x - twist.angular.z) / maxInput;
-    }
-
-    frc::ChassisSpeeds Drivetrain::twistDrive (const geometry_msgs::msg::Twist twist){
         double xSpeed = twist.linear.x;
         double ySpeed = twist.linear.y;
         double zTurn = twist.angular.z;
-        frc::ChassisSpeeds speeds = frc::ChassisSpeeds::FromFieldRelativeSpeeds(units::meters_per_second_t{xSpeed}, units::meters_per_second_t{ySpeed}, units::radians_per_second_t{zTurn}, frc::Rotation2d{units::degree_t{-imu->GetFusedHeading()}});
-        //frc::ChassisSpeeds speeds = frc::ChassisSpeeds{units::meters_per_second_t{xSpeed}, units::meters_per_second_t{ySpeed}, units::radians_per_second_t{zTurn}};
+        frc::ChassisSpeeds speeds = frc::ChassisSpeeds::FromFieldRelativeSpeeds(
+            units::meters_per_second_t{xSpeed}, 
+            units::meters_per_second_t{ySpeed}, 
+            units::radians_per_second_t{zTurn}, 
+            orientation);
+        return speeds;
+    }
+
+    frc::ChassisSpeeds Drivetrain::twistDrive(const geometry_msgs::msg::Twist &twist)
+    {
+        double xSpeed = twist.linear.x;
+        double ySpeed = twist.linear.y;
+        double zTurn = twist.angular.z;
+        frc::ChassisSpeeds speeds = frc::ChassisSpeeds{
+            units::meters_per_second_t{xSpeed},
+            units::meters_per_second_t{ySpeed},
+            units::radians_per_second_t{zTurn}};
         return speeds;
     }
 
@@ -170,7 +172,8 @@ namespace robot
         frc::ChassisSpeeds speed;
         switch (driveState)
         {
-        case OPEN_LOOP_STICK:{
+        case OPEN_LOOP_FIELD_REL:
+        {
             // if we are safe, set motor demands,
             if (lastStickTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
             {
@@ -185,30 +188,50 @@ namespace robot
                 stickTwist.linear.y = joyData.at(0);
                 stickTwist.angular.z = joyData.at(2);
                 // convert to demands
-                //arcadeDrive(stickTwist, leftDemand, rightDemand);
+                speed = twistDrive(stickTwist, frc::Rotation2d{units::degree_t{-imu->GetFusedHeading()}});
+            }
+            else
+            { // otherwise force motors to zero, there is stale data
+                speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
+            }
+            break;
+        }
+        case OPEN_LOOP_ROBOT_REL:
+        {
+            // if we are safe, set motor demands,
+            if (lastStickTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
+            {
+                // parse the joy message
+                std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
+                                                                   DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
+
+                std::cout << "joyData " << joyData.at(0) << " " << joyData.at(1) << std::endl;
+
+                auto stickTwist = geometry_msgs::msg::Twist();
+                stickTwist.linear.x = joyData.at(1);
+                stickTwist.linear.y = joyData.at(0);
+                stickTwist.angular.z = joyData.at(2);
+                // convert to demands
                 speed = twistDrive(stickTwist);
             }
             else
             { // otherwise force motors to zero, there is stale data
-                frc::DriverStation::ReportWarning("You've done fucked up");
                 speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
-            }   
+            }
             break;
         }
         case VELOCITY_TWIST:
             // if we are safe, set motor demands,
             if (lastTwistTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
             {
-                twistToDemand(lastTwist, leftDemand, rightDemand);
+                speed = twistDrive(lastTwist);
             }
             else
             { // otherwise force motors to zero, there is stale data
-                leftDemand = rightDemand = 0;
+                speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
             }
-            speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
-            break;
 
-        case RAMSETE:
+            break;
         case PURSUIT: // for now have pursuit as an illegal mode
             frc::DriverStation::ReportWarning("Mode is not currently implemented");
             speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
@@ -218,28 +241,25 @@ namespace robot
             frc::DriverStation::ReportError("Drivetrain attempted to enter an illegal mode");
             speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
         }
-            auto [fr, fl, rr, rl] = sKinematics.ToSwerveModuleStates(speed);
-            frc::SmartDashboard::PutNumber("Drive/Front/Left/SetAngle", fl.angle.Degrees().to<double>());
-            frc::SmartDashboard::PutNumber("Drive/Front/Right/SetAngle", fr.angle.Degrees().to<double>());
-            frc::SmartDashboard::PutNumber("Drive/Rear/Left/SetAngle", rl.angle.Degrees().to<double>());
-            frc::SmartDashboard::PutNumber("Drive/Rear/Right/SetAngle", rr.angle.Degrees().to<double>());
-            frontLMod->setMotors(fl);
-            frontRMod->setMotors(fr);
-            rearLMod->setMotors(rl);
-            rearRMod->setMotors(rr);
+
+        auto [fr, fl, rr, rl] = sKinematics.ToSwerveModuleStates(speed);
+        frontLMod->setMotors(fl);
+        frontRMod->setMotors(fr);
+        rearLMod->setMotors(rl);
+        rearRMod->setMotors(rr);
     }
 
     void Drivetrain::publishData()
     {
         imuPub->publish(imuMsg);
         wheelStatePub->publish(wheelState);
+        if(DEBUG){
+            frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleABS", frontLMod->getData().encAbs);
+            frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleABS", frontRMod->getData().encAbs);
+            frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleABS", rearLMod->getData().encAbs);
+            frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleABS", rearRMod->getData().encAbs);
+        }
 
-        frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleABS", frontLMod->getData().encAbs);
-        frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleABS", frontRMod->getData().encAbs);
-        frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleABS", rearLMod->getData().encAbs);
-        frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleABS", rearRMod->getData().encAbs);
-
-        
         frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleRel", frontLMod->getData().angleRel);
         frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleRel", frontRMod->getData().angleRel);
         frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleRel", rearRMod->getData().angleRel);
@@ -260,7 +280,8 @@ namespace robot
         lastTwist = msg;
     }
 
-    void Drivetrain::stickCallback(const sensor_msgs::msg::Joy msg){
+    void Drivetrain::stickCallback(const sensor_msgs::msg::Joy msg)
+    {
         lastStickTime = frc::Timer::GetFPGATimestamp();
         lastStick = msg;
     }

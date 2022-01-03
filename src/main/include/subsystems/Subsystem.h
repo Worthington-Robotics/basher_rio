@@ -31,6 +31,8 @@ namespace robot {
          **/ 
         virtual void publishData() = 0;
 
+        virtual void enableDebug() = 0;
+
     };
     
 } // namespace robot

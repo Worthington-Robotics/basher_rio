@@ -26,9 +26,9 @@ namespace robot
      **/
     enum ControlState
     {
-        OPEN_LOOP_STICK,
+        OPEN_LOOP_ROBOT_REL,
+        OPEN_LOOP_FIELD_REL,
         VELOCITY_TWIST,
-        RAMSETE,
         PURSUIT
     };
 
@@ -93,7 +93,8 @@ namespace robot
 
         void updateSensorData();
 
-        frc::ChassisSpeeds twistDrive(const geometry_msgs::msg::Twist);
+        frc::ChassisSpeeds twistDrive(const geometry_msgs::msg::Twist & twist, const frc::Rotation2d & orientation );
+        frc::ChassisSpeeds twistDrive(const geometry_msgs::msg::Twist & twist );
 
         //IO devices
         std::shared_ptr<SModule> frontRMod, frontLMod, rearRMod, rearLMod;
