@@ -104,9 +104,11 @@ namespace robot
 
         // ROS Publishers
         rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imuPub;
+        rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr yawPub;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr wheelStatePub;
 
         // ROS Messages for publishing
+        std_msgs::msg::Int16 yaw;
         sensor_msgs::msg::Imu imuMsg;
         sensor_msgs::msg::JointState wheelState;
 
@@ -126,6 +128,7 @@ namespace robot
         frc::Translation2d sRearRight{-0.65_m, 0.65_m};
         frc::Translation2d sRearLeft{-0.65_m, -0.65_m};
         frc::SwerveDriveKinematics<4> sKinematics {sFrontRight, sFrontLeft, sRearRight, sRearLeft};
+        frc::SwerveDriveOdometry<4> sOdom {sKinematics, frc::Rotation2d{units::degree_t{0}}, frc::Pose2d{units::meter_t{0}, units::meter_t{0}, units::degree_t{0}}};
 
         bool DEBUG = false;
 

@@ -67,6 +67,8 @@ namespace robot
 
         void setMotors(frc::SwerveModuleState);
 
+        frc::SwerveModuleState getState();
+
         sSensorData getData();
 
         void setInvertDrive(bool);

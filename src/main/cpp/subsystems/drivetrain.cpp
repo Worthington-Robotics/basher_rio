@@ -123,11 +123,9 @@ namespace robot
         imuMsg.orientation.y = orientData[2];
         imuMsg.orientation.z = orientData[3];
 
-        //Read the current left and right joint states
-        //TODO FIX
-        // wheelState.position = {f->GetSelectedSensorPosition(), rightMaster->GetSelectedSensorPosition()};
-        // wheelState.velocity = {leftMaster->GetSelectedSensorVelocity(), rightMaster->GetSelectedSensorVelocity()};
-        // wheelState.effort = {leftMaster->GetStatorCurrent(), rightMaster->GetStatorCurrent()};
+        yaw.data = -imu->GetFusedHeading();
+
+       
     }
 
     // Average the wheel state velocities
@@ -178,14 +176,12 @@ namespace robot
                 std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
                                                                    DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
 
-                std::cout << "joyData " << joyData.at(0) << " " << joyData.at(1) << std::endl;
-
                 auto stickTwist = geometry_msgs::msg::Twist();
                 stickTwist.linear.x = joyData.at(1);
                 stickTwist.linear.y = joyData.at(0);
                 stickTwist.angular.z = joyData.at(2);
                 // convert to demands
-                speed = twistDrive(stickTwist, frc::Rotation2d{units::degree_t{-imu->GetFusedHeading()}});
+                speed = twistDrive(stickTwist, frc::Rotation2d{units::degree_t{yaw.data}});
             }
             else
             { // otherwise force motors to zero, there is stale data
@@ -201,8 +197,6 @@ namespace robot
                 // parse the joy message
                 std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
                                                                    DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
-
-                std::cout << "joyData " << joyData.at(0) << " " << joyData.at(1) << std::endl;
 
                 auto stickTwist = geometry_msgs::msg::Twist();
                 stickTwist.linear.x = joyData.at(1);
@@ -240,6 +234,7 @@ namespace robot
         }
 
         auto [fr, fl, rr, rl] = sKinematics.ToSwerveModuleStates(speed);
+        sOdom.Update(frc::Rotation2d{units::degree_t{-yaw.data}}, frontRMod->getData(), frontLMod->getData(), rearRMod->getData(), rearLMod->getData());
         frontLMod->setMotors(fl);
         frontRMod->setMotors(fr);
         rearLMod->setMotors(rl);
@@ -262,6 +257,11 @@ namespace robot
         frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleRel", frontRMod->getData().angleRel);
         frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleRel", rearRMod->getData().angleRel);
         frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleRel", rearLMod->getData().angleRel);
+
+        frc::SmartDashboard::PutNumber("Drive/Pose/X", sOdom.GetPose().X().to<double>());
+        frc::SmartDashboard::PutNumber("Drive/Pose/Y", sOdom.GetPose().Y().to<double>());
+        frc::SmartDashboard::PutNumber("Drive/Pose/Theta1", sOdom.GetPose().Rotation().Degrees().to<double>());
+        frc::SmartDashboard::PutNumber("Drive/Pose/Theta2", yaw.data);
     }
 
     void Drivetrain::trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg)
