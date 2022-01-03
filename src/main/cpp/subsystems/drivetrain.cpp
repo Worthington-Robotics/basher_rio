@@ -178,8 +178,6 @@ namespace robot
                 std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
                                                                    DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
 
-                std::cout << "joyData " << joyData.at(0) << " " << joyData.at(1) << std::endl;
-
                 auto stickTwist = geometry_msgs::msg::Twist();
                 stickTwist.linear.x = joyData.at(1);
                 stickTwist.linear.y = joyData.at(0);
@@ -201,8 +199,6 @@ namespace robot
                 // parse the joy message
                 std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
                                                                    DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
-
-                std::cout << "joyData " << joyData.at(0) << " " << joyData.at(1) << std::endl;
 
                 auto stickTwist = geometry_msgs::msg::Twist();
                 stickTwist.linear.x = joyData.at(1);
@@ -239,11 +235,11 @@ namespace robot
             speed = frc::ChassisSpeeds{0_mps, 0_mps, 0_rad_per_s};
         }
 
-        auto [fr, fl, rr, rl] = sKinematics.ToSwerveModuleStates(speed);
-        frontLMod->setMotors(fl);
-        frontRMod->setMotors(fr);
-        rearLMod->setMotors(rl);
-        rearRMod->setMotors(rr);
+        moduleStates = sKinematics.ToSwerveModuleStates(speed);
+        frontLMod->setMotors(moduleStates[0]);
+        frontRMod->setMotors(moduleStates[1]);
+        rearLMod->setMotors(moduleStates[2]);
+        rearRMod->setMotors(moduleStates[3]);
     }
 
     void Drivetrain::publishData()
@@ -256,6 +252,16 @@ namespace robot
             frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleABS", frontRMod->getData().encAbs);
             frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleABS", rearLMod->getData().encAbs);
             frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleABS", rearRMod->getData().encAbs);
+
+            frc::SmartDashboard::PutNumber("Drive/Front/Left/Desired", moduleStates[0].angle.Degrees().to<double>());
+            frc::SmartDashboard::PutNumber("Drive/Front/Right/Desired", moduleStates[1].angle.Degrees().to<double>());
+            frc::SmartDashboard::PutNumber("Drive/Rear/Left/Desired", moduleStates[2].angle.Degrees().to<double>());
+            frc::SmartDashboard::PutNumber("Drive/Rear/Right/Desired", moduleStates[3].angle.Degrees().to<double>());
+
+            frc::SmartDashboard::PutNumber("Drive/Front/Left/UncalABS", std::fmod(frontLMod->getData().encAbs + FR_ABS_OFFSET, 360.0));
+            frc::SmartDashboard::PutNumber("Drive/Front/Right/UncalABS", std::fmod(frontRMod->getData().encAbs + FL_ABS_OFFSET, 360.0));
+            frc::SmartDashboard::PutNumber("Drive/Rear/Left/UncalABS", std::fmod(rearLMod->getData().encAbs + RL_ABS_OFFSET, 360.0));
+            frc::SmartDashboard::PutNumber("Drive/Rear/Right/UncalABS", std::fmod(rearRMod->getData().encAbs + RR_ABS_OFFSET, 360.0));
         }
 
         frc::SmartDashboard::PutNumber("Drive/Front/Left/AngleRel", frontLMod->getData().angleRel);

@@ -126,11 +126,12 @@ namespace robot
         frc::Translation2d sRearRight{-0.65_m, 0.65_m};
         frc::Translation2d sRearLeft{-0.65_m, -0.65_m};
         frc::SwerveDriveKinematics<4> sKinematics {sFrontRight, sFrontLeft, sRearRight, sRearLeft};
+        std::array<frc::SwerveModuleState, 4> moduleStates; //fl, fr, rl, rr
 
         bool DEBUG = false;
 
         // Control states for the DT
-        ControlState driveState;
+        ControlState driveState = OPEN_LOOP_ROBOT_REL;
 
         // last update time for safety critical topics
         double lastTwistTime, lastStickTime;
