@@ -102,7 +102,7 @@ namespace robot
         return frc::SwerveModuleState{units::meters_per_second_t{(drive->GetSelectedSensorVelocity() / (2048 * 39.37 * 6.12)) * (4 * M_PI * 10)},
          frc::Rotation2d{units::degree_t{angle->GetSelectedSensorPosition() / TICKS_PER_DEGREE / (64 / 5)}}};
     }
-
+ 
     sSensorData SModule::getData()
     {
         return sSensorData{angle->GetSelectedSensorPosition(), drive->GetSelectedSensorPosition(), drive->GetSelectedSensorVelocity(), encod->GetAbsolutePosition()};
