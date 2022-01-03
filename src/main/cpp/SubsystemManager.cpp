@@ -4,6 +4,9 @@
 #include <frc/DriverStation.h>
 #include "rclcpp/rclcpp.hpp"
 
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 namespace robot
 {
 
@@ -12,6 +15,8 @@ namespace robot
                                            enabledNotif(std::bind(&SubsystemManager::enabledLoop, this)),
                                            disabledNotif(std::bind(&SubsystemManager::disabledLoop, this))
     {
+        sysReset = this->create_service<std_srvs::srv::Trigger>("/sys/reset", std::bind(&SubsystemManager::serviceReset, this, _1, _2));
+        sysDebug = this->create_service<std_srvs::srv::SetBool>("/sys/debug", std::bind(&SubsystemManager::serviceDebug, this, _1, _2));
     }
 
     void SubsystemManager::registerSubsystems(std::vector<std::shared_ptr<Subsystem>> subsystems)
@@ -24,6 +29,7 @@ namespace robot
         {
             subsystem->createRosBindings(this);
             subsystem->reset();
+            subsystem->enableDebug(false);
         }
     }
 
@@ -34,6 +40,34 @@ namespace robot
             subsystem->reset();
         }
     }
+
+    void SubsystemManager::serviceReset(std::shared_ptr<std_srvs::srv::Trigger::Request> ping, std::shared_ptr<std_srvs::srv::Trigger::Response> pong)
+    {
+        pong->success = true;
+        try{
+            for (std::shared_ptr<Subsystem> subsystem : subsystems)
+            {
+             subsystem->reset();
+            }
+        } catch (std::exception e) {
+            pong->message = e.what();
+            pong->success = false;
+        }
+    }
+
+    void SubsystemManager::serviceDebug(std::shared_ptr<std_srvs::srv::SetBool::Request> ping, std::shared_ptr<std_srvs::srv::SetBool::Response> pong){
+        pong->success = true;
+        try{
+            for (std::shared_ptr<Subsystem> subsystem : subsystems)
+            {
+             subsystem->enableDebug(ping->data);
+            }
+        } catch (std::exception e) {
+            pong->message = e.what();
+            pong->success = false;
+        }
+    }
+
 
     void SubsystemManager::startEnabledLoop()
     {
@@ -92,11 +126,6 @@ namespace robot
 
     void SubsystemManager::disabledLoop(){
         rclcpp::spin_some(this->shared_from_this());
-        //frc::DriverStation::ReportWarning("Running onloop iteration");
-        for (std::shared_ptr<Subsystem> subsystem : subsystems)
-        {
-            subsystem->publishData();
-        }
     }
 
 } // namespace robot

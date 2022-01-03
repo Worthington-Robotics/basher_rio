@@ -6,6 +6,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "subsystems/Subsystem.h"
+#include "std_srvs/srv/trigger.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 
 namespace robot
 {
@@ -25,6 +27,30 @@ namespace robot
          * Commands all susbsystems to undergo a reset.
          **/ 
         void reset();
+
+        /**
+         * Commands all susbsystems to undergo a reset from a ROS service. 
+         * 
+         * @ensures
+         * pong->success contains whether the reset occured without fail 
+         * IF !pong->success, THEN pong->message includes the error message from the failing reset
+         * 
+         * @param ping This is empty and you can ignore it, it is merely a requirement of ROS
+         * @param pong This is the response message with error status
+         **/ 
+        void serviceReset(std::shared_ptr<std_srvs::srv::Trigger::Request> ping, std::shared_ptr<std_srvs::srv::Trigger::Response> pong);
+
+        /**
+         * Commands all susbsystems to enable or disable their debug modes
+         * 
+         * @ensures
+         * pong->success contains whether the debug enable occured without fail 
+         * IF !pong->success, THEN pong->message includes the error message from the failing reset
+         * 
+         * @param ping This contains the ros message, and the boolean for debug to be set to
+         * @param pong This is the response message with error status
+         **/ 
+        void serviceDebug(std::shared_ptr<std_srvs::srv::SetBool::Request> ping, std::shared_ptr<std_srvs::srv::SetBool::Response> pong);
 
         /**
          * starts the subsystem manager thread, and begins updating the subsystems in order. 
@@ -58,6 +84,8 @@ namespace robot
 
         void enabledLoop();
         void disabledLoop();
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr sysReset;
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr sysDebug;
     };
 
 } // namespace robot
