@@ -271,6 +271,7 @@ namespace robot
 
         frc::SmartDashboard::PutNumber("Drive/Control_Mode", static_cast<unsigned int>(driveState));
 
+        frc::SmartDashboard::PutString("Drive/Pose/units", sOdom.GetPose().X().name());
         frc::SmartDashboard::PutNumber("Drive/Pose/X", sOdom.GetPose().X().to<double>());
         frc::SmartDashboard::PutNumber("Drive/Pose/Y", sOdom.GetPose().Y().to<double>());
         frc::SmartDashboard::PutNumber("Drive/Pose/Theta1", sOdom.GetPose().Rotation().Degrees().to<double>());
