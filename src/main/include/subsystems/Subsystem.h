@@ -33,6 +33,11 @@ namespace robot {
         virtual void publishData() = 0;
 
         /**
+         * Override this function with code needed to update sensors assosiated with the robot
+         **/ 
+        virtual void updateSensorData() = 0;
+
+        /**
          * Overide this function to recieve information on when debug mode is enabled
          **/ 
         virtual void enableDebug(bool debugEnable){

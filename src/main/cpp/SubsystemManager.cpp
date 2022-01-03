@@ -107,6 +107,7 @@ namespace robot
                 for (std::shared_ptr<Subsystem> subsystem : subsystems)
                 {
                     subsystem->onStart();
+                    subsystem->updateSensorData();
                     subsystem->publishData();
                 }
                 isFirstIteration = false;
@@ -118,6 +119,7 @@ namespace robot
                 for (std::shared_ptr<Subsystem> subsystem : subsystems)
                 {
                     subsystem->onLoop();
+                    subsystem->updateSensorData();
                     subsystem->publishData();
                 }
             }
@@ -139,6 +141,7 @@ namespace robot
         rclcpp::spin_some(this->shared_from_this());
         for (std::shared_ptr<Subsystem> subsystem : subsystems)
         {
+            subsystem->updateSensorData();
             subsystem->publishData();
         }
     }

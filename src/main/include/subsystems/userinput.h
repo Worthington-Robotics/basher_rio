@@ -44,6 +44,12 @@ namespace robot
          * Override this function with code needed to publish all data out to the ros network
          **/
         void publishData() override;
+        
+        /**
+         * Override this function with code needed to publish all data out to the ros network
+         **/
+        void updateSensorData() override;
+        
 
         /**
          * Evaluate the deadband on the joystick.

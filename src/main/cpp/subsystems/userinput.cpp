@@ -31,6 +31,8 @@ namespace robot
 
     void UserInput::onLoop() {}
 
+    void UserInput::updateSensorData() {}
+
     void UserInput::publishData()
     {
         for (int i = 0; i < sticks.size(); i++)

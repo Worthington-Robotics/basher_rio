@@ -124,8 +124,8 @@ namespace robot
         imuMsg.orientation.z = orientData[3];
 
         yaw.data = -imu->GetFusedHeading();
-
-       
+        sOdom.Update(frc::Rotation2d{units::degree_t{yaw.data}}, frontRMod->getState(),
+            frontLMod->getState(), rearRMod->getState(), rearLMod->getState());
     }
 
     // Average the wheel state velocities
@@ -234,8 +234,6 @@ namespace robot
         }
 
         moduleStates = sKinematics.ToSwerveModuleStates(speed);
-        sOdom.Update(frc::Rotation2d{units::degree_t{yaw.data}}, frontRMod->getState(),
-            frontLMod->getState(), rearRMod->getState(), rearLMod->getState());
         
         // FR, FL, RR, RL
         frontRMod->setMotors(moduleStates[0]);

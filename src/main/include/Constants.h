@@ -30,8 +30,8 @@
 #define USER_STICKS {0}
 
 #define DRIVE_STICK_TOPIC "/sticks/stick0"
-#define DRIVE_STICK_SCALAR {1, -1, 1, 1}
-#define DRIVE_STICK_DEADBAND 0.15
+#define DRIVE_STICK_SCALAR {1, -1, .25, 1}
+#define DRIVE_STICK_DEADBAND 0.2
 #define DRIVE_STICK_POWER 2
 
 /**

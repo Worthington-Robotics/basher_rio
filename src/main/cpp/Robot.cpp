@@ -7,6 +7,7 @@
 #include "subsystems/drivetrain.h"
 #include "subsystems/userinput.h"
 #include "Constants.h"
+#include <frc/Filesystem.h>
 
 void Robot::RobotInit()
 {
@@ -25,7 +26,19 @@ void Robot::RobotInit()
         drive,
         sticks});
 
-    frc::DriverStation::GetInstance().ReportWarning("Robot Code Initialized");
+    // grab the version string
+    int versionNum = 1337;
+    // wpi::SmallVectorImpl<char> filename = wpi::SmallVectorImpl<char>(0);
+    // frc::filesystem::GetDeployDirectory(filename);
+    // std::cout << filename.data() << std::endl;
+    // while(filename.size() > 0){
+    //     std::cout << filename.pop_back_val() << std::endl;
+    // }
+    // filename += "/version.dat";
+    // FILE* version = std::fopen( filename., "r");
+    // std::fscanf(version, "%*s%i", &versionNum);
+    // std::fclose(version);
+    frc::DriverStation::GetInstance().ReportWarning(std::string("Robot Code Initialized with version ") + std::to_string(versionNum));
 }
 
 void Robot::RobotPeriodic()
