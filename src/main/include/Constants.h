@@ -42,10 +42,6 @@
 // Applies for both velocity, and open loop twist mode
 #define DRIVE_TIMEOUT 0.030 // seconds
 
-// Transmission gearing histeresis. low thresh should be lower than high thresh
-#define DRIVE_SHIFT_LOW_THRESH 6.5 // lower Limit of high gear (rad/s)
-#define DRIVE_SHIFT_HIGH_THRESH 8.5 // upper limit of low gear (rad/s)
-
 // IMU covariance matricies (3x3) Row major about x, y, z axes
 #define IMU_ORIENT_COVAR {1, 0, 0, 0, 1, 0, 0, 0, 1} // only show variances of data
 #define IMU_ACCEL_COVAR {1, 0, 0, 0, 1, 0, 0, 0, 1} // only show variances of data
