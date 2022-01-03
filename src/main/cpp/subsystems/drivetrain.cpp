@@ -86,7 +86,7 @@ namespace robot
         leftDemand = rightDemand = 0;
         lastTwistTime = 0;
 
-        driveState = OPEN_LOOP_FIELD_REL;
+        driveState = OPEN_LOOP_ROBOT_REL;
 
         frontRMod->reset();
         frontLMod->reset();
@@ -234,7 +234,8 @@ namespace robot
         }
 
         moduleStates = sKinematics.ToSwerveModuleStates(speed);
-        sOdom.Update(frc::Rotation2d{units::degree_t{-yaw.data}}, frontRMod->getData(), frontLMod->getData(), rearRMod->getData(), rearLMod->getData());
+        sOdom.Update(frc::Rotation2d{units::degree_t{-yaw.data}}, frontRMod->getState(),
+            frontLMod->getState(), rearRMod->getState(), rearLMod->getState());
         frontLMod->setMotors(moduleStates[0]);
         frontRMod->setMotors(moduleStates[1]);
         rearLMod->setMotors(moduleStates[2]);
@@ -267,6 +268,8 @@ namespace robot
         frc::SmartDashboard::PutNumber("Drive/Front/Right/AngleRel", frontRMod->getData().angleRel);
         frc::SmartDashboard::PutNumber("Drive/Rear/Left/AngleRel", rearRMod->getData().angleRel);
         frc::SmartDashboard::PutNumber("Drive/Rear/Right/AngleRel", rearLMod->getData().angleRel);
+
+        frc::SmartDashboard::PutNumber("Drive/Control_Mode", static_cast<unsigned int>(driveState));
 
         frc::SmartDashboard::PutNumber("Drive/Pose/X", sOdom.GetPose().X().to<double>());
         frc::SmartDashboard::PutNumber("Drive/Pose/Y", sOdom.GetPose().Y().to<double>());

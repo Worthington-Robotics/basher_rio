@@ -94,7 +94,8 @@ namespace robot
     frc::SwerveModuleState SModule::getState()
     {
         //(ticks / 100ms) / (ticks / revolution) * (Circumfrence [Diameter * Pi] / revolution) * (1s / 100ms) / (12in / foot)
-        return frc::SwerveModuleState{units::feet_per_second_t{drive->GetSelectedSensorVelocity() / 2048 * 4 * M_PI * 10 / 12}, frc::Rotation2d{units::degree_t{angle->GetSelectedSensorPosition() / TICKS_PER_DEGREE / (64 / 5)}}};
+        return frc::SwerveModuleState{units::feet_per_second_t{drive->GetSelectedSensorVelocity() / 2048 * 4 * M_PI * 10 / 12},
+         frc::Rotation2d{units::degree_t{angle->GetSelectedSensorPosition() / TICKS_PER_DEGREE / (64 / 5)}}};
     }
 
     sSensorData SModule::getData()
