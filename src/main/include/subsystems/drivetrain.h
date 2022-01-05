@@ -141,6 +141,10 @@ namespace robot
 
         // Demand variables
         double leftDemand, rightDemand;
+
+        bool isRobotRel = false;
+        bool strafeLock = false;
+        bool spinLock = false;
     };
 
 } // namespace robot

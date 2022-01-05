@@ -25,7 +25,7 @@ namespace robot
 
         rearRMod = std::make_shared<SModule>(DRIVE_RR_DRIVE, DRIVE_RR_ANGLE, DRIVE_RR_ENCOD, RR_ABS_OFFSET,
                                              PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
-        rearRMod->setInvertDrive(true);
+        rearRMod->setInvertDrive(false);
 
         rearLMod = std::make_shared<SModule>(DRIVE_RL_DRIVE, DRIVE_RL_ANGLE, DRIVE_RL_ENCOD, RL_ABS_OFFSET,
                                              PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF}, PIDF{DRIVE_LEFT_KP, DRIVE_LEFT_KI, DRIVE_LEFT_KD, DRIVE_LEFT_KF});
@@ -126,9 +126,15 @@ namespace robot
         yaw.data = -imu->GetFusedHeading();
         sOdom.Update(frc::Rotation2d{units::degree_t{yaw.data}}, frontRMod->getState(),
             frontLMod->getState(), rearRMod->getState(), rearLMod->getState());
+        if(isRobotRel)
+        {
+            driveState = OPEN_LOOP_ROBOT_REL;
+        } else {
+            driveState = OPEN_LOOP_FIELD_REL;
+        }
     }
 
-    // Average the wheel state velocities
+    // Average the wheel state velocities TODO fix!!
     double getFwdVelocity(sensor_msgs::msg::JointState wheelState)
     {
         return (wheelState.velocity.at(0) + wheelState.velocity.at(0)) / 2.0;
@@ -165,6 +171,19 @@ namespace robot
         updateSensorData();
 
         frc::ChassisSpeeds speed;
+        // parse the joy message
+        std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
+                                                            DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
+        auto stickTwist = geometry_msgs::msg::Twist();
+        stickTwist.linear.x = joyData.at(1);
+        stickTwist.linear.y = joyData.at(0);
+        stickTwist.angular.z = joyData.at(2);
+        if(spinLock) {
+            stickTwist.angular.z = 0;
+        }
+        if(strafeLock) {
+            stickTwist.linear.y = 0;
+        }
         switch (driveState)
         {
         case OPEN_LOOP_FIELD_REL:
@@ -172,14 +191,7 @@ namespace robot
             // if we are safe, set motor demands,
             if (lastStickTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
             {
-                // parse the joy message
-                std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
-                                                                   DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
 
-                auto stickTwist = geometry_msgs::msg::Twist();
-                stickTwist.linear.x = joyData.at(1);
-                stickTwist.linear.y = joyData.at(0);
-                stickTwist.angular.z = joyData.at(2);
                 // convert to demands
                 speed = twistDrive(stickTwist, frc::Rotation2d{units::degree_t{yaw.data}});
             }
@@ -194,14 +206,6 @@ namespace robot
             // if we are safe, set motor demands,
             if (lastStickTime + DRIVE_TIMEOUT > frc::Timer::GetFPGATimestamp())
             {
-                // parse the joy message
-                std::vector<double> joyData = UserInput::scalarCut(lastStick, DRIVE_STICK_DEADBAND,
-                                                                   DRIVE_STICK_POWER, DRIVE_STICK_SCALAR);
-
-                auto stickTwist = geometry_msgs::msg::Twist();
-                stickTwist.linear.x = joyData.at(1);
-                stickTwist.linear.y = joyData.at(0);
-                stickTwist.angular.z = joyData.at(2);
                 // convert to demands
                 speed = twistDrive(stickTwist);
             }
@@ -275,8 +279,7 @@ namespace robot
         frc::SmartDashboard::PutString("Drive/Pose/units", sOdom.GetPose().X().name());
         frc::SmartDashboard::PutNumber("Drive/Pose/X", sOdom.GetPose().X().to<double>());
         frc::SmartDashboard::PutNumber("Drive/Pose/Y", sOdom.GetPose().Y().to<double>());
-        frc::SmartDashboard::PutNumber("Drive/Pose/Theta1", sOdom.GetPose().Rotation().Degrees().to<double>());
-        frc::SmartDashboard::PutNumber("Drive/Pose/Theta2", yaw.data);
+        frc::SmartDashboard::PutNumber("Drive/Pose/Theta", yaw.data);
     }
 
     void Drivetrain::trajectoryCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg)
@@ -297,6 +300,10 @@ namespace robot
     {
         lastStickTime = frc::Timer::GetFPGATimestamp();
         lastStick = msg;
+        //update this in disabled? or just init publish empty data? (null ptr on boot)
+        isRobotRel = lastStick.buttons.at(0);
+        spinLock = lastStick.buttons.at(6);
+        strafeLock = lastStick.buttons.at(7);
     }
 
     void Drivetrain::driveModeCallback(const std_msgs::msg::Int16 msg)

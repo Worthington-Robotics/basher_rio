@@ -79,9 +79,9 @@ namespace robot
                                     const frc::Rotation2d &currentAngle)
     {
         auto delta = desiredState.angle - currentAngle;
-        if (units::math::abs(delta.Degrees()) > 90_deg)
+        if (units::math::abs(delta.Degrees()) >= 90_deg)
         {
-            return {-desiredState.speed, desiredState.angle + frc::Rotation2d{180_deg}};
+            return {-desiredState.speed, desiredState.angle.RotateBy(frc::Rotation2d{180_deg})};
         }
         else
         {
